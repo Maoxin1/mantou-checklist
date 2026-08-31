@@ -1,0 +1,10 @@
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/*.webmanifest
+  Cache-Control: no-cache
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

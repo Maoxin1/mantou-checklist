@@ -1,0 +1,318 @@
+.mobile-editor-page {
+  min-height: 100dvh;
+  padding: 0 0 calc(88px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 10% 0%, rgba(31, 107, 67, 0.12), transparent 22rem),
+    #f2f5f3;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-editor-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: calc(1rem + env(safe-area-inset-top)) 1rem 0.8rem;
+}
+
+.mobile-editor-header > div:first-child {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.mobile-editor-header h1 {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.12rem;
+  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mobile-editor-header .brand-wordmark {
+  font-size: 1.05rem;
+}
+
+.mobile-header-actions {
+  display: flex;
+  gap: 0.45rem;
+}
+
+.mobile-editor-header a,
+.mobile-header-button {
+  display: grid;
+  place-items: center;
+  min-width: 52px;
+  min-height: 48px;
+  border: 1px solid rgba(31, 107, 67, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--green-dark);
+  font-size: 0.88rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.mobile-header-button {
+  border-color: var(--green);
+  background: var(--green);
+  color: white;
+}
+
+.editor-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.35rem;
+  width: calc(min(100%, 560px) - 2rem);
+  margin: 0 auto 0.8rem;
+  padding: 0.3rem;
+  border: 1px solid rgba(31, 107, 67, 0.14);
+  border-radius: 14px;
+  background: rgba(247, 249, 248, 0.94);
+  box-shadow: 0 8px 22px rgba(24, 50, 37, 0.1);
+  backdrop-filter: blur(12px);
+}
+
+.editor-tab {
+  min-height: 48px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.editor-tab.active {
+  background: var(--green);
+  color: white;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  width: calc(min(100%, 560px) - 2rem);
+  min-height: 32px;
+  margin: -0.3rem auto 0.8rem;
+  color: var(--muted);
+  font-size: 0.73rem;
+}
+
+.connection-status > span {
+  width: 8px;
+  height: 8px;
+  margin-right: 0.12rem;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+.connection-status.offline > span {
+  background: #b28a55;
+}
+
+.connection-status.offline strong {
+  color: #8a6636;
+}
+
+.mobile-editor-shell {
+  width: min(100%, 560px);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.mobile-form-view,
+.mobile-preview-view {
+  padding: 1rem;
+  border: 1px solid rgba(31, 107, 67, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 14px 40px rgba(24, 50, 37, 0.1);
+}
+
+.mobile-editor-shell[data-view="form"] .mobile-preview-view,
+.mobile-editor-shell[data-view="preview"] .mobile-form-view {
+  display: none;
+}
+
+.mobile-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin-bottom: 0.9rem;
+}
+
+.mobile-section-heading h2 {
+  margin: 0;
+  font-size: 1.16rem;
+}
+
+.mobile-section-heading > span,
+.mobile-section-heading .save-status {
+  color: var(--muted);
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
+.mobile-editor-page form {
+  gap: 0.75rem;
+}
+
+.mobile-editor-page fieldset,
+.mobile-editor-page details {
+  padding: 0.9rem;
+  border-radius: 15px;
+}
+
+.mobile-editor-page summary {
+  min-height: 48px;
+  margin: -0.55rem -0.35rem;
+  padding: 0.75rem 0.35rem;
+  touch-action: manipulation;
+}
+
+.mobile-editor-page details[open] summary {
+  margin-bottom: 0.15rem;
+}
+
+.mobile-editor-page label {
+  margin-top: 0.72rem;
+}
+
+.mobile-editor-page input,
+.mobile-editor-page select,
+.mobile-editor-page .button,
+.mobile-editor-page .stepper button {
+  min-height: 48px;
+  font-size: 16px;
+  touch-action: manipulation;
+}
+
+.mobile-editor-page .switch-row input {
+  width: 58px;
+  height: 32px;
+  min-height: 32px;
+}
+
+.mobile-editor-page .switch-row input::after {
+  width: 26px;
+  height: 26px;
+}
+
+.mobile-editor-page .switch-row input:checked::after {
+  transform: translateX(26px);
+}
+
+.mobile-editor-page .stepper {
+  grid-template-columns: 52px 1fr 52px;
+}
+
+.mobile-editor-page .text-button {
+  min-height: 48px;
+  margin-top: 0.6rem;
+  text-align: left;
+}
+
+.backup-description {
+  margin: 0.55rem 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.backup-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.backup-button {
+  border-color: rgba(31, 107, 67, 0.22);
+  background: var(--green-soft);
+  color: var(--green-dark);
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  min-height: 0 !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+}
+
+.mobile-preview-view .single-preview {
+  padding: 0.65rem;
+}
+
+.mobile-preview-view .single-preview img {
+  width: 100%;
+}
+
+.preview-help {
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.mobile-download-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  padding: 0.65rem max(1rem, calc((100vw - 528px) / 2)) calc(0.65rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(31, 107, 67, 0.14);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 -8px 24px rgba(24, 50, 37, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.mobile-download-bar .button {
+  min-height: 52px;
+}
+
+.mobile-editor-page .toast {
+  right: 1rem;
+  bottom: calc(82px + env(safe-area-inset-bottom));
+}
+
+@media (max-width: 360px) {
+  .mobile-editor-header h1 {
+    font-size: 1rem;
+  }
+
+  .mobile-editor-header .brand-wordmark {
+    font-size: 0.95rem;
+  }
+
+  .mobile-header-actions {
+    gap: 0.3rem;
+  }
+
+  .mobile-editor-header a,
+  .mobile-header-button {
+    min-width: 48px;
+    padding: 0.5rem;
+  }
+
+  .mobile-form-view,
+  .mobile-preview-view {
+    padding: 0.8rem;
+    border-radius: 17px;
+  }
+}

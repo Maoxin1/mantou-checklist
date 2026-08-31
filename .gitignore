@@ -1,0 +1,10 @@
+node_modules/
+.chrome-test/
+.chrome-mobile-test/
+test-output/
+dist/
+.wrangler/
+.env
+.env.*
+!.env.example
+**/*backup*.json

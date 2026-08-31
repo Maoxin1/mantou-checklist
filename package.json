@@ -1,0 +1,35 @@
+{
+  "name": "personal-investment-checklist-pwa",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first one-page public checklist generator",
+  "homepage": "https://mantou-checklist.pages.dev/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Maoxin1/mantou-checklist.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Maoxin1/mantou-checklist/issues"
+  },
+  "license": "MIT",
+  "keywords": [
+    "pwa",
+    "local-first",
+    "offline-first",
+    "habit-tracker",
+    "canvas"
+  ],
+  "scripts": {
+    "serve": "python -m http.server 4173",
+    "check": "node --check app.js && node --check editor.js && node --check sw.js",
+    "icons": "node scripts/generate-icons.mjs",
+    "screenshots": "node scripts/capture-docs.mjs",
+    "build": "npm run icons && node scripts/build.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.62.1",
+    "wrangler": "^4.127.1"
+  }
+}
