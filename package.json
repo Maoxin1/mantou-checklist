@@ -21,7 +21,7 @@
     "canvas"
   ],
   "scripts": {
-    "serve": "python -m http.server 4173",
+    "serve": "npm run build && wrangler pages dev dist --port 4173",
     "check": "node --check app.js && node --check editor.js && node --check sw.js",
     "icons": "node scripts/generate-icons.mjs",
     "screenshots": "node scripts/capture-docs.mjs",

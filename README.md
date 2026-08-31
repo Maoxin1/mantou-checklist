@@ -61,7 +61,7 @@
 
 ## 本地运行
 
-运行和构建需要 Node.js 20+，本地静态服务器示例使用 Python 3。只有自动化测试、文档截图和重新生成图标时需要 Chrome/Chromium。
+运行和构建需要 Node.js 20+。本地服务器使用 Wrangler 模拟 Cloudflare Pages 的无扩展名路由；只有自动化测试、文档截图和重新生成图标时需要 Chrome/Chromium。
 
 ```powershell
 git clone https://github.com/Maoxin1/mantou-checklist.git
@@ -73,7 +73,7 @@ npm run serve
 打开：
 
 - <http://127.0.0.1:4173/>
-- <http://127.0.0.1:4173/editor.html>
+- <http://127.0.0.1:4173/editor>
 
 常用命令：
 

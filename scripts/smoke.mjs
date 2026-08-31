@@ -36,7 +36,7 @@ async function testInstallHelp(userAgent, expectedText) {
     };
   });
   const page = await context.newPage();
-  await page.goto(`${baseUrl}/editor.html?v=16`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  await page.goto(`${baseUrl}/editor`, { waitUntil: "domcontentloaded", timeout: 15_000 });
   await page.locator("#install-button").waitFor({ state: "visible" });
   await page.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
   if ((await page.locator("link[rel='apple-touch-icon']").getAttribute("href")) !== "./icons/icon-192.png") {
@@ -80,7 +80,7 @@ const editorContext = await browser.newContext({ viewport: { width: 412, height:
 const editorPage = await editorContext.newPage();
 const editorErrors = [];
 editorPage.on("pageerror", (error) => editorErrors.push(error.message));
-await editorPage.goto(`${baseUrl}/editor.html?v=16`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+await editorPage.goto(`${baseUrl}/editor`, { waitUntil: "domcontentloaded", timeout: 15_000 });
 await editorPage.locator("#date").waitFor({ state: "visible", timeout: 10_000 });
 
 const manifestHref = await editorPage.locator("link[rel='manifest']").getAttribute("href");
@@ -91,7 +91,7 @@ const appManifest = await cdp.send("Page.getAppManifest");
 if (appManifest.errors?.length) throw new Error(`PWA 清单错误：${appManifest.errors.map((item) => item.message).join(" | ")}`);
 const appManifestData = JSON.parse(appManifest.data);
 if (appManifestData.id !== "./editor") throw new Error(`PWA 应用 ID 异常：${appManifestData.id}`);
-if (appManifestData.start_url !== "./editor.html") {
+if (appManifestData.start_url !== "./editor") {
   throw new Error(`PWA 启动入口异常：${appManifestData.start_url}`);
 }
 if (appManifestData.display !== "standalone") {
@@ -165,7 +165,7 @@ const editorDownload = await editorDownloadEvent;
 if (!editorDownload.suggestedFilename().endsWith(".png")) throw new Error("离线 PNG 下载失败");
 if (editorErrors.length) throw new Error(`手机编辑器错误：${editorErrors.join(" | ")}`);
 
-const installedStartUrl = new URL(appManifestData.start_url, `${baseUrl}/editor.html`).href;
+const installedStartUrl = new URL(appManifestData.start_url, `${baseUrl}/editor`).href;
 await editorPage.close();
 const offlineLaunchPage = await editorContext.newPage();
 await offlineLaunchPage.goto(installedStartUrl, { waitUntil: "domcontentloaded", timeout: 10_000 });

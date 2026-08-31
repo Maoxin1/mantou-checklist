@@ -1,8 +1,8 @@
-const CACHE_NAME = "personal-investment-checklist-v17";
+const CACHE_NAME = "personal-investment-checklist-v18";
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./editor.html",
+  "./editor",
   "./styles.css?v=16",
   "./editor.css?v=16",
   "./app.js?v=16",
@@ -53,7 +53,7 @@ async function networkFirst(request) {
     if (request.mode === "navigate") {
       const pathname = new URL(request.url).pathname;
       const isEditor = /\/editor(?:\.html)?\/?$/.test(pathname);
-      return isEditor ? caches.match("./editor.html") : caches.match("./index.html");
+      return isEditor ? caches.match("./editor") : caches.match("./index.html");
     }
     throw new Error(`Offline resource unavailable: ${request.url}`);
   }
