@@ -25,7 +25,7 @@
     "check": "node --check app.js && node --check editor.js && node --check sw.js",
     "icons": "node scripts/generate-icons.mjs",
     "screenshots": "node scripts/capture-docs.mjs",
-    "build": "npm run icons && node scripts/build.mjs",
+    "build": "node scripts/build.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {

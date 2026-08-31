@@ -1,10 +1,11 @@
 import { chromium } from "playwright-core";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { findChromeExecutable } from "./browser-path.mjs";
 
 const projectDir = path.resolve(import.meta.dirname, "..");
 const browser = await chromium.launch({
-  executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  executablePath: findChromeExecutable(),
   headless: true
 });
 

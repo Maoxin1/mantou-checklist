@@ -50,7 +50,7 @@
 
 ## 本地运行
 
-需要 Node.js 20+、Python 3，以及本机 Chrome（自动化测试使用）。
+运行和构建需要 Node.js 20+，本地静态服务器示例使用 Python 3。只有自动化测试、文档截图和重新生成图标时需要 Chrome/Chromium。
 
 ```powershell
 git clone https://github.com/Maoxin1/mantou-checklist.git
@@ -71,6 +71,8 @@ npm run check   # JavaScript 语法检查
 npm run smoke   # 主页、手机、备份、离线和下载测试
 npm run build   # 生成 Cloudflare Pages 发布目录 dist/
 ```
+
+运行 `npm run smoke` 前，请在另一个终端保持 `npm run serve` 运行。脚本会自动寻找常见位置的 Chrome/Chromium；如果浏览器安装在其他位置，请设置 `CHROME_PATH` 环境变量。
 
 ## 改成自己的版本
 

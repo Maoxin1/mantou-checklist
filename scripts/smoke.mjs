@@ -1,6 +1,7 @@
 import { chromium } from "playwright-core";
 import { mkdir, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { findChromeExecutable } from "./browser-path.mjs";
 
 const projectDir = path.resolve(import.meta.dirname, "..");
 const outputDir = path.join(projectDir, "test-output");
@@ -8,7 +9,7 @@ const baseUrl = (process.env.CHECKLIST_BASE_URL || "http://127.0.0.1:4173").repl
 await mkdir(outputDir, { recursive: true });
 
 const browser = await chromium.launch({
-  executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  executablePath: findChromeExecutable(),
   headless: true
 });
 console.log("[smoke] browser ready");
