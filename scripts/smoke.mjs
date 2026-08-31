@@ -26,10 +26,31 @@ async function waitForServiceWorker(page) {
   });
 }
 
+async function testInstallHelp(userAgent, expectedText) {
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, userAgent });
+  await context.addInitScript(() => {
+    const addEventListener = window.addEventListener.bind(window);
+    window.addEventListener = (type, listener, options) => {
+      if (type === "beforeinstallprompt") return;
+      addEventListener(type, listener, options);
+    };
+  });
+  const page = await context.newPage();
+  await page.goto(`${baseUrl}/editor.html?v=16`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+  await page.locator("#install-button").waitFor({ state: "visible" });
+  await page.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
+  if ((await page.locator("link[rel='apple-touch-icon']").getAttribute("href")) !== "./icons/icon-192.png") {
+    throw new Error("Apple Touch Icon 配置异常");
+  }
+  await page.locator("#install-button").click();
+  await page.waitForFunction((text) => document.querySelector("#toast")?.textContent.includes(text), expectedText);
+  await context.close();
+}
+
 const mainPage = await browser.newPage({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
 const mainErrors = [];
 mainPage.on("pageerror", (error) => mainErrors.push(error.message));
-await mainPage.goto(`${baseUrl}/?v=15`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+await mainPage.goto(`${baseUrl}/?v=16`, { waitUntil: "domcontentloaded", timeout: 15_000 });
 await mainPage.locator("#date").waitFor({ state: "visible", timeout: 10_000 });
 await mainPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 
@@ -58,7 +79,7 @@ console.log("[smoke] main generator ready");
 const editorPage = await browser.newPage({ viewport: { width: 412, height: 915 }, acceptDownloads: true });
 const editorErrors = [];
 editorPage.on("pageerror", (error) => editorErrors.push(error.message));
-await editorPage.goto(`${baseUrl}/editor.html?v=15`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+await editorPage.goto(`${baseUrl}/editor.html?v=16`, { waitUntil: "domcontentloaded", timeout: 15_000 });
 await editorPage.locator("#date").waitFor({ state: "visible", timeout: 10_000 });
 
 const manifestHref = await editorPage.locator("link[rel='manifest']").getAttribute("href");
@@ -136,6 +157,16 @@ await editorPage.context().setOffline(false);
 if (editorErrors.length) throw new Error(`手机编辑器错误：${editorErrors.join(" | ")}`);
 console.log("[smoke] mobile editor ready");
 
+await testInstallHelp(
+  "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0 Mobile Safari/537.36",
+  "浏览器菜单"
+);
+await testInstallHelp(
+  "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
+  "Safari"
+);
+console.log("[smoke] cross-platform install help ready");
+
 console.log(JSON.stringify({
   bodyPhase,
   mainPreviewCount: 1,
@@ -148,7 +179,8 @@ console.log(JSON.stringify({
   manifestHref,
   manifestErrors: appManifest.errors?.length || 0,
   backupBytes: (await stat(backupPath)).size,
-  offlineReload: true
+  offlineReload: true,
+  installHelp: ["android", "ios"]
 }, null, 2));
 
 await browser.close();

@@ -389,13 +389,21 @@ async function installApp() {
     return;
   }
   if (!installPrompt) {
-    showToast("请从三星浏览器菜单选择“添加页面到”或“安装应用”");
+    showToast(getInstallHelpMessage());
     return;
   }
   installPrompt.prompt();
   const choice = await installPrompt.userChoice;
   installPrompt = null;
   if (choice.outcome === "accepted") elements.install.hidden = true;
+}
+
+function getInstallHelpMessage() {
+  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  return isIOS
+    ? "请使用 Safari 的“分享”，选择“添加到主屏幕”"
+    : "请打开浏览器菜单，选择“安装应用”或“添加到主屏幕”";
 }
 
 function registerServiceWorker() {
