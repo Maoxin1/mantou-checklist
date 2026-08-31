@@ -1,4 +1,4 @@
-const CACHE_NAME = "personal-investment-checklist-v16";
+const CACHE_NAME = "personal-investment-checklist-v17";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -6,7 +6,7 @@ const APP_SHELL = [
   "./styles.css?v=16",
   "./editor.css?v=16",
   "./app.js?v=16",
-  "./editor.js?v=16",
+  "./editor.js?v=17",
   "./config.json",
   "./manifest.webmanifest",
   "./editor.webmanifest",
@@ -48,7 +48,7 @@ async function networkFirst(request) {
     }
     return response;
   } catch {
-    const cached = await caches.match(request);
+    const cached = await caches.match(request, { ignoreSearch: request.mode === "navigate" });
     if (cached) return cached;
     if (request.mode === "navigate") {
       const pathname = new URL(request.url).pathname;

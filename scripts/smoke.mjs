@@ -76,7 +76,8 @@ if (!(await waitForServiceWorker(mainPage))) throw new Error("主页 Service Wor
 if (mainErrors.length) throw new Error(`主页错误：${mainErrors.join(" | ")}`);
 console.log("[smoke] main generator ready");
 
-const editorPage = await browser.newPage({ viewport: { width: 412, height: 915 }, acceptDownloads: true });
+const editorContext = await browser.newContext({ viewport: { width: 412, height: 915 }, acceptDownloads: true });
+const editorPage = await editorContext.newPage();
 const editorErrors = [];
 editorPage.on("pageerror", (error) => editorErrors.push(error.message));
 await editorPage.goto(`${baseUrl}/editor.html?v=16`, { waitUntil: "domcontentloaded", timeout: 15_000 });
@@ -88,6 +89,14 @@ if (!(await editorPage.locator("#install-button").isVisible())) throw new Error(
 const cdp = await editorPage.context().newCDPSession(editorPage);
 const appManifest = await cdp.send("Page.getAppManifest");
 if (appManifest.errors?.length) throw new Error(`PWA 清单错误：${appManifest.errors.map((item) => item.message).join(" | ")}`);
+const appManifestData = JSON.parse(appManifest.data);
+if (appManifestData.id !== "./editor") throw new Error(`PWA 应用 ID 异常：${appManifestData.id}`);
+if (appManifestData.start_url !== "./editor.html") {
+  throw new Error(`PWA 启动入口异常：${appManifestData.start_url}`);
+}
+if (appManifestData.display !== "standalone") {
+  throw new Error(`PWA 未配置为无地址栏独立运行：${appManifestData.display}`);
+}
 
 if (!(await editorPage.locator(".mobile-form-view").isVisible())) throw new Error("手机编辑器未默认显示填写页");
 if (await editorPage.locator(".mobile-preview-view").isVisible()) throw new Error("手机编辑器默认错误显示预览页");
@@ -136,6 +145,7 @@ const overflow = await editorPage.evaluate(() => document.documentElement.scroll
 if (overflow > 1) throw new Error(`手机编辑器横向溢出：${overflow}px`);
 
 if (!(await waitForServiceWorker(editorPage))) throw new Error("手机编辑器 Service Worker 未就绪");
+await editorPage.waitForFunction(() => document.querySelector("#connection-status")?.textContent.includes("已可离线使用"));
 
 await editorPage.reload({ waitUntil: "domcontentloaded" });
 await editorPage.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
@@ -153,8 +163,19 @@ const editorDownloadEvent = editorPage.waitForEvent("download", { timeout: 10_00
 await editorPage.locator("#download-button").click();
 const editorDownload = await editorDownloadEvent;
 if (!editorDownload.suggestedFilename().endsWith(".png")) throw new Error("离线 PNG 下载失败");
-await editorPage.context().setOffline(false);
 if (editorErrors.length) throw new Error(`手机编辑器错误：${editorErrors.join(" | ")}`);
+
+const installedStartUrl = new URL(appManifestData.start_url, `${baseUrl}/editor.html`).href;
+await editorPage.close();
+const offlineLaunchPage = await editorContext.newPage();
+await offlineLaunchPage.goto(installedStartUrl, { waitUntil: "domcontentloaded", timeout: 10_000 });
+await offlineLaunchPage.locator("#date").waitFor({ state: "visible" });
+await offlineLaunchPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
+const offlineLaunchDownloadEvent = offlineLaunchPage.waitForEvent("download", { timeout: 10_000 });
+await offlineLaunchPage.locator("#download-button").click();
+const offlineLaunchDownload = await offlineLaunchDownloadEvent;
+if (!offlineLaunchDownload.suggestedFilename().endsWith(".png")) throw new Error("桌面图标离线冷启动后 PNG 下载失败");
+await editorContext.setOffline(false);
 console.log("[smoke] mobile editor ready");
 
 await testInstallHelp(
@@ -177,9 +198,13 @@ console.log(JSON.stringify({
   mobileOverflow: overflow,
   previewSize,
   manifestHref,
+  manifestId: appManifestData.id,
+  manifestStartUrl: appManifestData.start_url,
+  manifestDisplay: appManifestData.display,
   manifestErrors: appManifest.errors?.length || 0,
   backupBytes: (await stat(backupPath)).size,
   offlineReload: true,
+  offlineColdLaunch: true,
   installHelp: ["android", "ios"]
 }, null, 2));
 

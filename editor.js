@@ -6,6 +6,7 @@ const importBackupButton = document.querySelector("#import-backup");
 const backupFile = document.querySelector("#backup-file");
 const toast = document.querySelector("#toast");
 let toastTimer = null;
+let offlineReady = Boolean(navigator.serviceWorker?.controller);
 
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
@@ -26,7 +27,9 @@ function updateConnectionStatus() {
   const online = navigator.onLine;
   connectionStatus.classList.toggle("offline", !online);
   connectionStatus.innerHTML = online
-    ? '<span aria-hidden="true"></span><strong>在线</strong> · 数据仅保存到当前手机'
+    ? offlineReady
+      ? '<span aria-hidden="true"></span><strong>在线</strong> · 已可离线使用'
+      : '<span aria-hidden="true"></span><strong>在线</strong> · 正在准备离线功能'
     : '<span aria-hidden="true"></span><strong>离线运行</strong> · 填写和下载仍可使用';
 }
 
@@ -90,3 +93,10 @@ backupFile.addEventListener("change", () => {
 window.addEventListener("online", updateConnectionStatus);
 window.addEventListener("offline", updateConnectionStatus);
 updateConnectionStatus();
+
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.ready.then(() => {
+    offlineReady = true;
+    updateConnectionStatus();
+  });
+}

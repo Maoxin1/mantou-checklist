@@ -4,7 +4,7 @@
   "short_name": "定投编辑器",
   "description": "可离线填写、预览并下载个人定投清单",
   "lang": "zh-CN",
-  "start_url": "./editor.html?source=pwa",
+  "start_url": "./editor.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
