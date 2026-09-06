@@ -4,19 +4,22 @@ const DEADLINE = "2026-09-19";
 const fallbackConfig = {
   diaryDay: 1291,
   investmentPhase: "主动投资系统建设中",
-  englishStatus: "方案设计中",
+  readingPhase: "Beyond Feelings · W1",
+  englishStatus: "今日未开始",
+  nextResult: "批判性判断框架 v0.1",
+  nextResultDate: "待验收",
+  nextResult2: "",
+  nextResultDate2: "待验收",
+  nextResult3: "",
+  nextResultDate3: "待验收",
   motto: "把时间转化为能力、资本与自主权。",
   beforeDeadline: {
     bodyPhase: "减脂收官",
-    bodyMeta: "9.19验收",
-    nextResult: "雕刻行动阶段复盘",
-    nextResultDate: "2026.9.19"
+    bodyMeta: "9.19验收"
   },
   afterDeadline: {
     bodyPhase: "精干强健计划",
-    bodyMeta: "持续期",
-    nextResult: "精干强健计划阶段复盘",
-    nextResultDate: "待确定"
+    bodyMeta: "持续期"
   }
 };
 
@@ -28,12 +31,17 @@ const elements = {
   bodyPhase: document.querySelector("#body-phase"),
   bodyMeta: document.querySelector("#body-meta"),
   investmentPhase: document.querySelector("#investment-phase"),
+  readingPhase: document.querySelector("#reading-phase"),
   diaryDone: document.querySelector("#diary-done"),
   diaryDay: document.querySelector("#diary-day"),
   englishStatus: document.querySelector("#english-status"),
   gymCount: document.querySelector("#gym-count"),
   nextResult: document.querySelector("#next-result"),
   nextResultDate: document.querySelector("#next-result-date"),
+  nextResult2: document.querySelector("#next-result-2"),
+  nextResultDate2: document.querySelector("#next-result-date-2"),
+  nextResult3: document.querySelector("#next-result-3"),
+  nextResultDate3: document.querySelector("#next-result-date-3"),
   motto: document.querySelector("#motto"),
   gymMinus: document.querySelector("#gym-minus"),
   gymPlus: document.querySelector("#gym-plus"),
@@ -107,13 +115,20 @@ function buildInitialState(saved, today) {
     bodyPhase: saved?.date === today ? saved.bodyPhase : phase.bodyPhase,
     bodyMeta: saved?.date === today ? saved.bodyMeta : phase.bodyMeta,
     investmentPhase: saved?.investmentPhase || config.investmentPhase,
+    readingPhase: saved?.readingPhase || config.readingPhase,
     diaryDone: saved?.date === today ? Boolean(saved.diaryDone) : false,
     diaryDay,
-    englishStatus: saved?.englishStatus || config.englishStatus,
+    englishStatus: saved?.date === today
+      ? normalizeReadingStatus(saved?.englishStatus)
+      : normalizeReadingStatus(config.englishStatus),
     gymCount: saved?.weekKey === currentWeek ? clamp(saved.gymCount, 0, 4) : 0,
     weekKey: currentWeek,
-    nextResult: saved?.date === today ? saved.nextResult : phase.nextResult,
-    nextResultDate: saved?.date === today ? saved.nextResultDate : phase.nextResultDate,
+    nextResult: saved?.nextResult || config.nextResult,
+    nextResultDate: normalizeAcceptanceStatus(saved?.nextResultDate || config.nextResultDate),
+    nextResult2: saved?.nextResult2 || config.nextResult2,
+    nextResultDate2: normalizeAcceptanceStatus(saved?.nextResultDate2 || config.nextResultDate2),
+    nextResult3: saved?.nextResult3 || config.nextResult3,
+    nextResultDate3: normalizeAcceptanceStatus(saved?.nextResultDate3 || config.nextResultDate3),
     motto: saved?.motto || config.motto
   };
 }
@@ -128,6 +143,7 @@ function bindEvents() {
     if (elements.date.value !== activeDiaryDate) {
       elements.diaryDone.checked = false;
       lastDiaryDone = false;
+      elements.englishStatus.value = normalizeReadingStatus(config.englishStatus);
       activeDiaryDate = elements.date.value;
     }
     applyPhaseDefaults();
@@ -170,12 +186,17 @@ function fillForm(state) {
   elements.bodyPhase.value = state.bodyPhase;
   elements.bodyMeta.value = state.bodyMeta;
   elements.investmentPhase.value = state.investmentPhase;
+  elements.readingPhase.value = state.readingPhase;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
   elements.englishStatus.value = state.englishStatus;
   elements.gymCount.value = state.gymCount;
   elements.nextResult.value = state.nextResult;
   elements.nextResultDate.value = state.nextResultDate;
+  elements.nextResult2.value = state.nextResult2;
+  elements.nextResultDate2.value = state.nextResultDate2;
+  elements.nextResult3.value = state.nextResult3;
+  elements.nextResultDate3.value = state.nextResultDate3;
   elements.motto.value = state.motto;
 }
 
@@ -198,6 +219,7 @@ function getFormState() {
     bodyPhase: elements.bodyPhase.value.trim(),
     bodyMeta: elements.bodyMeta.value.trim(),
     investmentPhase: elements.investmentPhase.value.trim(),
+    readingPhase: elements.readingPhase.value.trim(),
     diaryDone: elements.diaryDone.checked,
     diaryDay: Math.max(0, Number(elements.diaryDay.value) || 0),
     englishStatus: elements.englishStatus.value,
@@ -205,6 +227,10 @@ function getFormState() {
     weekKey: getWeekKey(elements.date.value || toLocalISODate(new Date())),
     nextResult: elements.nextResult.value.trim(),
     nextResultDate: elements.nextResultDate.value.trim(),
+    nextResult2: elements.nextResult2.value.trim(),
+    nextResultDate2: elements.nextResultDate2.value.trim(),
+    nextResult3: elements.nextResult3.value.trim(),
+    nextResultDate3: elements.nextResultDate3.value.trim(),
     motto: elements.motto.value.trim()
   };
 }
@@ -241,8 +267,6 @@ function applyPhaseDefaults() {
   const phase = getPhaseDefaults(elements.date.value);
   elements.bodyPhase.value = phase.bodyPhase;
   elements.bodyMeta.value = phase.bodyMeta;
-  elements.nextResult.value = phase.nextResult;
-  elements.nextResultDate.value = phase.nextResultDate;
 }
 
 function getPhaseDefaults(date) {
@@ -324,20 +348,35 @@ function drawEvergreenPoster(context, state, fontFamily) {
   drawArchiveCard(context, 54, 314, 972, 300, theme.white, theme.primary);
   drawFitText(context, "阶段推进", 94, 376, 300, 29, 900, fontFamily, theme.primary);
   drawArchiveRow(context, 94, 460, "身体", `${state.bodyPhase || "未填写"}${state.bodyMeta ? ` · ${state.bodyMeta}` : ""}`, theme, fontFamily);
-  drawArchiveRow(context, 94, 540, "投资", state.investmentPhase || "未填写", theme, fontFamily);
+  drawArchiveRow(context, 94, 528, "投资", state.investmentPhase || "未填写", theme, fontFamily);
+  drawArchiveRow(context, 94, 596, "认知训练", state.readingPhase || "未填写", theme, fontFamily);
 
   drawArchiveCard(context, 54, 650, 972, 336, theme.white, theme.primary);
   drawFitText(context, "今日积累", 94, 712, 300, 29, 900, fontFamily, theme.primary);
   drawArchiveRow(context, 94, 796, "日记", `${statusText}  ·  累计有效 ${state.diaryDay} 天`, theme, fontFamily);
-  if (state.englishStatus !== "hidden") {
-    drawArchiveRow(context, 94, 876, "英语", state.englishStatus, theme, fontFamily);
-  }
-  drawArchiveRow(context, 94, 956, "本周行动", `健身 ${state.gymCount}/4 天`, theme, fontFamily);
+  drawArchiveRow(context, 94, 876, "认知训练", state.englishStatus, theme, fontFamily);
+  drawArchiveRow(context, 94, 956, "健身", `${state.gymCount}/4 天`, theme, fontFamily);
 
-  drawArchiveCard(context, 54, 1034, 972, 250, theme.white, theme.gold);
-  drawFitText(context, "最近验收", 94, 1098, 300, 28, 900, fontFamily, theme.gold);
-  drawFitText(context, state.nextResult || "待确定", 94, 1180, 820, 44, 900, fontFamily, theme.ink);
-  drawFitText(context, state.nextResultDate || "待确定", 94, 1236, 500, 28, 700, fontFamily, theme.muted);
+  const deliverables = [
+    { value: state.nextResult, status: state.nextResultDate },
+    { value: state.nextResult2, status: state.nextResultDate2 },
+    { value: state.nextResult3, status: state.nextResultDate3 }
+  ].filter((item) => item.value.trim());
+
+  drawArchiveCard(context, 54, 1034, 972, 100 + deliverables.length * 50, theme.white, theme.gold);
+  drawFitText(context, "本周交付物", 94, 1088, 300, 28, 900, fontFamily, theme.gold);
+  deliverables.forEach((item, index) => {
+    drawResultRow(
+      context,
+      94,
+      1144 + index * 54,
+      String(index + 1).padStart(2, "0"),
+      item.value,
+      item.status,
+      theme,
+      fontFamily
+    );
+  });
 
   context.fillStyle = theme.line;
   context.fillRect(72, 1390, 936, 2);
@@ -353,6 +392,23 @@ function drawArchiveCard(context, x, y, width, height, fill, accent) {
 function drawArchiveRow(context, x, baseline, label, value, theme, fontFamily) {
   drawFitText(context, label, x, baseline, 150, 27, 800, fontFamily, theme.muted);
   drawFitText(context, value, x + 170, baseline, 740, 34, 650, fontFamily, theme.ink);
+}
+
+function drawResultRow(context, x, baseline, index, value, status, theme, fontFamily) {
+  drawFitText(context, index, x, baseline, 44, 24, 900, fontFamily, theme.gold);
+  drawFitText(context, value, x + 58, baseline, 630, 30, 800, fontFamily, theme.ink);
+  drawFitText(
+    context,
+    status,
+    x + 884,
+    baseline,
+    170,
+    24,
+    800,
+    fontFamily,
+    status === "已通过" ? theme.primary : theme.muted,
+    "right"
+  );
 }
 
 function drawRoundedFill(context, x, y, width, height, radius, color) {
@@ -462,4 +518,12 @@ function formatDisplayDate(isoDate) {
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, Number(value) || 0));
+}
+
+function normalizeReadingStatus(value) {
+  return ["今日完成", "今日未开始", "休息日"].includes(value) ? value : "今日未开始";
+}
+
+function normalizeAcceptanceStatus(value) {
+  return ["待验收", "已通过"].includes(value) ? value : "待验收";
 }

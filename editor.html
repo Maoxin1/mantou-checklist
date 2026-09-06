@@ -25,8 +25,8 @@
     </header>
 
     <nav class="editor-tabs" aria-label="编辑器页面">
-      <button class="editor-tab active" type="button" data-editor-view="form" aria-selected="true">填写</button>
-      <button class="editor-tab" type="button" data-editor-view="preview" aria-selected="false">预览</button>
+      <button class="editor-tab" type="button" data-editor-view="form" aria-selected="false">填写</button>
+      <button class="editor-tab active" type="button" data-editor-view="preview" aria-selected="true">预览</button>
     </nav>
 
     <div id="connection-status" class="connection-status" role="status" aria-live="polite">
@@ -34,7 +34,7 @@
       <strong>在线</strong> · 数据仅保存到当前手机
     </div>
 
-    <main id="mobile-editor" class="mobile-editor-shell" data-view="form">
+    <main id="mobile-editor" class="mobile-editor-shell" data-view="preview">
       <section class="mobile-form-view" aria-labelledby="mobile-form-title">
         <div class="mobile-section-heading">
           <div>
@@ -67,13 +67,11 @@
               <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
             </label>
             <label>
-              <span>英语状态</span>
+              <span>认知训练</span>
               <select id="english-status" name="englishStatus">
-                <option value="方案设计中">方案设计中</option>
-                <option value="✓ 已完成">✓ 已完成</option>
-                <option value="△ 部分完成">△ 部分完成</option>
-                <option value="× 未完成">× 未完成</option>
-                <option value="hidden">暂不显示</option>
+                <option value="今日完成">今日完成</option>
+                <option value="今日未开始">今日未开始</option>
+                <option value="休息日">休息日</option>
               </select>
             </label>
           </fieldset>
@@ -105,14 +103,43 @@
               <input id="investment-phase" name="investmentPhase" type="text" maxlength="30" />
             </label>
             <label>
-              <span>最近验收成果</span>
+              <span>认知训练阶段</span>
+              <input id="reading-phase" name="readingPhase" type="text" maxlength="36" />
+            </label>
+            <label>
+              <span>交付物 1</span>
               <input id="next-result" name="nextResult" type="text" maxlength="30" />
             </label>
             <label>
-              <span>成果日期或条件</span>
-              <input id="next-result-date" name="nextResultDate" type="text" maxlength="20" />
+              <span>验收状态 1</span>
+              <select id="next-result-date" name="nextResultDate">
+                <option value="待验收">待验收</option>
+                <option value="已通过">已通过</option>
+              </select>
             </label>
-            <button id="apply-phase-defaults" class="text-button" type="button">按日期恢复阶段默认值</button>
+            <label>
+              <span>交付物 2</span>
+              <input id="next-result-2" name="nextResult2" type="text" maxlength="30" />
+            </label>
+            <label>
+              <span>验收状态 2</span>
+              <select id="next-result-date-2" name="nextResultDate2">
+                <option value="待验收">待验收</option>
+                <option value="已通过">已通过</option>
+              </select>
+            </label>
+            <label>
+              <span>交付物 3</span>
+              <input id="next-result-3" name="nextResult3" type="text" maxlength="30" />
+            </label>
+            <label>
+              <span>验收状态 3</span>
+              <select id="next-result-date-3" name="nextResultDate3">
+                <option value="待验收">待验收</option>
+                <option value="已通过">已通过</option>
+              </select>
+            </label>
+            <button id="apply-phase-defaults" class="text-button" type="button">按日期恢复身体阶段默认值</button>
           </details>
 
           <details>
@@ -157,7 +184,7 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./app.js?v=16"></script>
+    <script type="module" src="./app.js?v=20"></script>
     <script type="module" src="./editor.js?v=17"></script>
   </body>
 </html>

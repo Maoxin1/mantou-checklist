@@ -17,8 +17,9 @@
 
 ## 它能做什么
 
-- 填写日记完成状态、累计有效天数、英语状态和每周健身天数
-- 记录当前身体阶段、投资阶段与最近验收成果
+- 填写日记、认知训练和每周健身状态
+- 记录当前身体阶段、投资阶段与认知训练阶段
+- 最多填写三个本周交付物，并分别标记“待验收”或“已通过”
 - 实时生成“松柏档案”风格图片
 - 一键下载 1080 × 1536 PNG
 - 自动保存到当前浏览器
@@ -91,9 +92,13 @@ npm run build   # 生成 Cloudflare Pages 发布目录 dist/
 
 - `diaryDay`：累计有效日记天数起点
 - `investmentPhase`：当前长期项目或专业阶段
-- `englishStatus`：英语等候设计或完成状态
+- `readingPhase`：当前认知训练材料与阶段，例如 `Beyond Feelings · W1`
+- `englishStatus`：认知训练的今日状态；沿用旧字段名以兼容现有本地数据
+- `nextResult` / `nextResultDate`：交付物 1 与验收状态；沿用旧字段名以兼容现有本地数据
+- `nextResult2` / `nextResultDate2`：交付物 2 与验收状态
+- `nextResult3` / `nextResultDate3`：交付物 3 与验收状态
 - `motto`：长期口号
-- `beforeDeadline` / `afterDeadline`：阶段切换前后的默认内容
+- `beforeDeadline` / `afterDeadline`：身体阶段切换前后的默认内容
 
 视觉颜色和手机布局位于 `styles.css`、`editor.css`；1080 × 1536 成图规则位于 `app.js` 的 Canvas 绘图函数中。
 
