@@ -156,6 +156,7 @@ await editorPage.evaluate(() => {
   }));
 });
 await editorPage.reload({ waitUntil: "domcontentloaded" });
+await editorPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 await editorPage.locator("[data-editor-view='form']").click();
 await editorPage.locator(".mobile-form-view").waitFor({ state: "visible" });
 await editorPage.locator("details").first().evaluate((details) => { details.open = true; });
@@ -208,6 +209,7 @@ await editorPage.evaluate(() => {
   localStorage.setItem("personal-investment-checklist:v1", JSON.stringify(state));
 });
 await editorPage.reload({ waitUntil: "domcontentloaded" });
+await editorPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 await editorPage.locator("[data-editor-view='form']").click();
 await editorPage.locator(".mobile-form-view").waitFor({ state: "visible" });
 await editorPage.locator("details").first().evaluate((details) => { details.open = true; });
