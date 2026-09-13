@@ -29,7 +29,7 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
-    "playwright-core": "^1.62.1",
+    "playwright-core": "^1.63.0",
     "wrangler": "^4.131.1"
   }
 }
