@@ -29,6 +29,7 @@ const elements = {
   investmentPhase: document.querySelector("#investment-phase"),
   readingPhase: document.querySelector("#reading-phase"),
   readingMinutes: document.querySelector("#reading-minutes"),
+  readingMinutesValue: document.querySelector("#reading-minutes-value"),
   trainingStatus: document.querySelector("#training-status"),
   diaryDone: document.querySelector("#diary-done"),
   diaryDay: document.querySelector("#diary-day"),
@@ -117,8 +118,8 @@ function buildInitialState(saved, today) {
     investmentPhase: saved?.investmentPhase || config.investmentPhase,
     readingPhase: migrateLegacyText(saved?.readingPhase, ["Beyond Feelings · W1"], config.readingPhase),
     readingMinutes: sameDay && saved?.readingMinutes !== undefined
-      ? clamp(saved.readingMinutes, 0, 360)
-      : clamp(daily.readingMinutes, 0, 360),
+      ? clamp(saved.readingMinutes, 0, 180)
+      : clamp(daily.readingMinutes, 0, 180),
     trainingStatus: sameDay && saved?.trainingStatus
       ? normalizeTrainingStatus(saved.trainingStatus)
       : normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus),
@@ -137,6 +138,8 @@ function buildInitialState(saved, today) {
 }
 
 function bindEvents() {
+  elements.readingMinutes.addEventListener("input", updateReadingSliderDisplay);
+
   elements.form.addEventListener("input", () => {
     render();
     queueSave();
@@ -150,7 +153,8 @@ function bindEvents() {
       activeWeekKey = nextWeek;
     }
     const daily = weeklyLog[nextDate] || {};
-    elements.readingMinutes.value = clamp(daily.readingMinutes, 0, 360);
+    elements.readingMinutes.value = clamp(daily.readingMinutes, 0, 180);
+    updateReadingSliderDisplay();
     elements.trainingStatus.value = normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus);
     elements.diaryDone.checked = Boolean(daily.diaryDone);
     lastDiaryDone = elements.diaryDone.checked;
@@ -192,7 +196,8 @@ function fillForm(state) {
   elements.bodyMeta.value = state.bodyMeta;
   elements.investmentPhase.value = state.investmentPhase;
   elements.readingPhase.value = state.readingPhase;
-  elements.readingMinutes.value = state.readingMinutes;
+  elements.readingMinutes.value = clamp(state.readingMinutes, 0, 180);
+  updateReadingSliderDisplay();
   elements.trainingStatus.value = state.trainingStatus;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
@@ -203,6 +208,13 @@ function fillForm(state) {
   elements.nextResult3.value = state.nextResult3;
   elements.nextResultDate3.value = state.nextResultDate3;
   elements.motto.value = state.motto;
+}
+
+function updateReadingSliderDisplay() {
+  const minutes = clamp(elements.readingMinutes.value, 0, 180);
+  elements.readingMinutes.value = minutes;
+  elements.readingMinutesValue.textContent = `${minutes} 分钟`;
+  elements.readingMinutes.style.setProperty("--reading-progress", `${(minutes / 180) * 100}%`);
 }
 
 function render(immediate = false) {
@@ -226,7 +238,7 @@ function getFormState() {
     activeWeekKey = weekKey;
   }
 
-  const readingMinutes = clamp(elements.readingMinutes.value, 0, 360);
+  const readingMinutes = clamp(elements.readingMinutes.value, 0, 180);
   const trainingStatus = normalizeTrainingStatus(elements.trainingStatus.value);
   const diaryDone = elements.diaryDone.checked;
 
