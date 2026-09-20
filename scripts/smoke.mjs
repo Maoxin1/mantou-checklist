@@ -47,7 +47,7 @@ async function testInstallHelp(userAgent, expectedText) {
 const mainPage = await browser.newPage({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
 const mainErrors = [];
 mainPage.on("pageerror", (error) => mainErrors.push(error.message));
-await mainPage.goto(`${baseUrl}/?v=21`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+await mainPage.goto(`${baseUrl}/?v=22`, { waitUntil: "domcontentloaded", timeout: 15_000 });
 await mainPage.locator("#reading-minutes").waitFor({ state: "visible", timeout: 10_000 });
 await mainPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 
@@ -55,8 +55,11 @@ await mainPage.locator("details").first().evaluate((details) => { details.open =
 if ((await mainPage.locator("#body-phase").inputValue()) !== "作息重构实验 V1") throw new Error("当前阶段默认值异常");
 if ((await mainPage.locator("#reading-phase").inputValue()) !== "认知类书籍") throw new Error("当前阅读默认值异常");
 
-await mainPage.locator("#reading-minutes").fill("100");
-await mainPage.locator("#reading-minutes").dispatchEvent("input");
+await mainPage.locator("#reading-minutes").evaluate((input) => {
+  input.value = "100";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+if ((await mainPage.locator("#reading-minutes-value").textContent()) !== "100 分钟") throw new Error("阅读滑块数值显示异常");
 await mainPage.locator("#training-status").selectOption("力量训练");
 if (!(await mainPage.locator("#diary-done").isChecked())) await mainPage.locator("#diary-done").check();
 await mainPage.waitForTimeout(450);
@@ -155,8 +158,11 @@ if ((await editorPage.locator("#reading-minutes").inputValue()) !== "0") throw n
 if ((await editorPage.locator("#training-status").inputValue()) !== "未训练") throw new Error("旧数据未补齐训练状态");
 if ((await editorPage.locator("#diary-day").inputValue()) !== "88") throw new Error("旧日记累计数据迁移失败");
 
-await editorPage.locator("#reading-minutes").fill("90");
-await editorPage.locator("#reading-minutes").dispatchEvent("input");
+await editorPage.locator("#reading-minutes").evaluate((input) => {
+  input.value = "90";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
+if ((await editorPage.locator("#reading-minutes-value").textContent()) !== "90 分钟") throw new Error("手机阅读滑块显示异常");
 await editorPage.locator("#training-status").selectOption("力量训练");
 if (!(await editorPage.locator("#diary-done").isChecked())) await editorPage.locator("#diary-done").check();
 await editorPage.waitForTimeout(450);
@@ -173,7 +179,10 @@ const backupDownload = await backupDownloadEvent;
 await backupDownload.saveAs(backupPath);
 if ((await stat(backupPath)).size < 100) throw new Error("备份文件内容异常");
 
-await editorPage.locator("#reading-minutes").fill("5");
+await editorPage.locator("#reading-minutes").evaluate((input) => {
+  input.value = "5";
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+});
 await editorPage.locator("#training-status").selectOption("恢复");
 await editorPage.waitForTimeout(350);
 editorPage.once("dialog", (dialog) => dialog.accept());
