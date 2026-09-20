@@ -26,7 +26,8 @@
     "icons": "node scripts/generate-icons.mjs",
     "screenshots": "node scripts/capture-docs.mjs",
     "build": "node scripts/build.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "deploy": "npm run check && npm run build && wrangler pages deploy dist --project-name=mantou-checklist --branch=main"
   },
   "devDependencies": {
     "playwright-core": "^1.63.0",

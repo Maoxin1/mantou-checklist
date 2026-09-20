@@ -106,17 +106,25 @@ npm run build
 
 ## Cloudflare Pages 部署
 
-项目使用与 `mantou-blog` 一致的自动发布路径：
+本项目保持 **Direct Upload + 本机手工发布**。GitHub Actions 只负责代码验证，不保存 Cloudflare 部署凭据。
 
-1. Pull Request 与 `main` push 先运行 `Validate`；
-2. 只有 `main` 上的 `Validate` 成功后，`Deploy Pages` 才构建并发布同一 commit；
-3. 发布完成后自动运行正式站 smoke test；
-4. 手动预览可在 `Deploy Pages` 中指定 `source_ref`。
+首次在一台电脑部署，或 Wrangler 登录状态失效时：
 
-`pages-deploy` Environment 需要：
+```powershell
+npx wrangler login --device
+```
 
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+之后每次正式发布只需要：
+
+```powershell
+git pull
+npm ci
+npm run deploy
+```
+
+`npm run deploy` 会依次执行 JavaScript 检查、生产构建，并把 `dist/` 上传到现有的 `mantou-checklist` Cloudflare Pages 项目。
+
+发布后如需额外核查正式站，可手动运行现有的 Production smoke workflow；日常不需要配置 `CLOUDFLARE_API_TOKEN` 或 `CLOUDFLARE_ACCOUNT_ID` 到 GitHub。
 
 ## 项目结构
 
