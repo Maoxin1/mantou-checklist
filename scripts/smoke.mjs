@@ -14,6 +14,13 @@ const browser = await chromium.launch({
 });
 console.log("[smoke] browser ready");
 
+async function setRangeValue(page, selector, value) {
+  await page.locator(selector).evaluate((element, nextValue) => {
+    element.value = String(nextValue);
+    element.dispatchEvent(new Event("input", { bubbles: true }));
+  }, value);
+}
+
 async function waitForServiceWorker(page) {
   return page.evaluate(async () => {
     if (!("serviceWorker" in navigator)) return false;
@@ -55,14 +62,14 @@ await mainPage.locator("details").first().evaluate((details) => { details.open =
 if ((await mainPage.locator("#body-phase").inputValue()) !== "作息重构实验 V1") throw new Error("当前阶段默认值异常");
 if ((await mainPage.locator("#reading-phase").inputValue()) !== "认知类书籍") throw new Error("当前阅读默认值异常");
 
-await mainPage.locator("#reading-minutes").fill("100");
-await mainPage.locator("#reading-minutes").dispatchEvent("input");
+await setRangeValue(mainPage, "#reading-minutes", 100);
 await mainPage.locator("#training-status").selectOption("力量训练");
 if (!(await mainPage.locator("#diary-done").isChecked())) await mainPage.locator("#diary-done").check();
 await mainPage.waitForTimeout(450);
 
 const savedMain = await mainPage.evaluate(() => JSON.parse(localStorage.getItem("personal-investment-checklist:v1")));
 if (savedMain.readingMinutes !== 100) throw new Error("阅读分钟自动保存失败");
+if ((await mainPage.locator("#reading-minutes-value").textContent()) !== "100 分钟") throw new Error("阅读滑块数值显示未同步");
 if (savedMain.trainingStatus !== "力量训练") throw new Error("训练状态自动保存失败");
 if (!savedMain.weekLog?.[savedMain.date]) throw new Error("本周自动日志未保存");
 
@@ -155,8 +162,7 @@ if ((await editorPage.locator("#reading-minutes").inputValue()) !== "0") throw n
 if ((await editorPage.locator("#training-status").inputValue()) !== "未训练") throw new Error("旧数据未补齐训练状态");
 if ((await editorPage.locator("#diary-day").inputValue()) !== "88") throw new Error("旧日记累计数据迁移失败");
 
-await editorPage.locator("#reading-minutes").fill("90");
-await editorPage.locator("#reading-minutes").dispatchEvent("input");
+await setRangeValue(editorPage, "#reading-minutes", 90);
 await editorPage.locator("#training-status").selectOption("力量训练");
 if (!(await editorPage.locator("#diary-done").isChecked())) await editorPage.locator("#diary-done").check();
 await editorPage.waitForTimeout(450);
@@ -173,7 +179,7 @@ const backupDownload = await backupDownloadEvent;
 await backupDownload.saveAs(backupPath);
 if ((await stat(backupPath)).size < 100) throw new Error("备份文件内容异常");
 
-await editorPage.locator("#reading-minutes").fill("5");
+await setRangeValue(editorPage, "#reading-minutes", 5);
 await editorPage.locator("#training-status").selectOption("恢复");
 await editorPage.waitForTimeout(350);
 editorPage.once("dialog", (dialog) => dialog.accept());
