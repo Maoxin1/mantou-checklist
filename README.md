@@ -106,16 +106,27 @@ npm run build   # 生成 Cloudflare Pages 发布目录 dist/
 
 ## Cloudflare Pages 部署
 
-项目采用静态文件直接上传，不需要服务器或数据库：
+项目继续使用 Cloudflare Pages Direct Upload，但发布流程改为与 `mantou-blog` 一致的自动流水线：
+
+1. Pull Request 与 `main` push 先运行 `Validate`；
+2. 只有 `main` 上的 `Validate` 成功后，`Deploy Pages` 才构建并发布同一 commit；
+3. 发布完成后自动对正式站运行 smoke test；
+4. 需要预览其他分支、标签或 commit 时，可手动运行 `Deploy Pages` 并填写 `source_ref`。
+
+部署凭据只在 `pages-deploy` Environment 的 deploy job 中读取。仓库需要配置：
+
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+本地仍可手动验证构建：
 
 ```powershell
+npm ci
+npm run check
 npm run build
-npx wrangler login --device
-npx wrangler pages project create your-project-name --production-branch main
-npx wrangler pages deploy dist --project-name=your-project-name --branch=main
 ```
 
-当前线上项目使用 Direct Upload；后续更新时重新运行构建和部署命令即可。
+正常更新不再需要本地执行 `wrangler pages deploy`。
 
 ## 项目结构
 
