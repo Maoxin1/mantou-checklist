@@ -572,3 +572,143 @@ select:focus {
     transition: none !important;
   }
 }
+
+
+.reading-control {
+  margin-top: 0.35rem;
+  padding: 0.15rem 0 0.2rem;
+}
+
+.reading-control-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.reading-control-title {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.reading-control small {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.reading-value {
+  flex: 0 0 auto;
+  color: var(--green);
+  font-size: 1.35rem;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
+.reading-range {
+  --slider-progress: 0%;
+  width: 100%;
+  min-height: 44px;
+  margin: 0.45rem 0 0;
+  padding: 12px 0;
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  outline: none;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.reading-range:focus {
+  border: 0;
+  box-shadow: none;
+}
+
+.reading-range:focus-visible {
+  outline: 3px solid rgba(31, 107, 67, 0.18);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+.reading-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--green) 0,
+    var(--green) var(--slider-progress),
+    #dce2de var(--slider-progress),
+    #dce2de 100%
+  );
+}
+
+.reading-range::-webkit-slider-thumb {
+  width: 24px;
+  height: 24px;
+  margin-top: -8px;
+  appearance: none;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 2px 8px rgba(24, 79, 53, 0.3);
+}
+
+.reading-range::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #dce2de;
+}
+
+.reading-range::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--green);
+}
+
+.reading-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 3px solid white;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 2px 8px rgba(24, 79, 53, 0.3);
+}
+
+.reading-marks {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-top: -0.15rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+}
+
+.reading-marks span {
+  text-align: center;
+}
+
+.reading-marks span:first-child {
+  text-align: left;
+}
+
+.reading-marks span:last-child {
+  text-align: right;
+}
+
+.reading-marks .target-mark {
+  color: var(--green);
+  font-weight: 900;
+}
+
+.reading-target {
+  margin: 0.3rem 0 0;
+  color: var(--green-dark);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-align: center;
+}
