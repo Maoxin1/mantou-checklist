@@ -1,0 +1,164 @@
+name: Deploy Pages
+
+on:
+  workflow_run:
+    workflows: ["Validate"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Branch, tag, or commit SHA to publish as a manual preview
+        required: true
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: >-
+    checklist-deploy-${{
+      github.event_name == 'workflow_dispatch' && 'manual-preview' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       'production') ||
+      format('ignored-{0}', github.run_id)
+    }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      commit_sha: ${{ steps.source.outputs.commit_sha }}
+      deploy_branch: ${{ steps.source.outputs.deploy_branch }}
+    steps:
+      - name: Check out exact source without deployment credentials
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: >-
+            ${{
+              github.event_name == 'workflow_run' &&
+              github.event.workflow_run.head_sha ||
+              inputs.source_ref
+            }}
+
+      - name: Record immutable source and target
+        id: source
+        env:
+          DEPLOY_BRANCH: >-
+            ${{ github.event_name == 'workflow_run' && 'main' || 'manual-preview' }}
+        run: |
+          echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "deploy_branch=$DEPLOY_BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install pinned dependencies
+        run: npm ci
+
+      - name: Validate source
+        run: |
+          npm run check
+          npm run build
+
+      - name: Package verified site
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: checklist-site-${{ github.run_id }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: pages-deploy
+    steps:
+      - name: Check out trusted deployment tooling
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: >-
+            ${{
+              github.event_name == 'workflow_run' &&
+              github.event.workflow_run.head_sha ||
+              github.sha
+            }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install pinned deployment tooling
+        run: npm ci
+
+      - name: Download verified site
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: checklist-site-${{ github.run_id }}
+          path: dist/
+
+      - name: Deploy verified artifact to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DEPLOY_BRANCH: ${{ needs.build.outputs.deploy_branch }}
+          DEPLOY_COMMIT: ${{ needs.build.outputs.commit_sha }}
+        run: >-
+          npx wrangler pages deploy dist
+          --project-name=mantou-checklist
+          --branch="$DEPLOY_BRANCH"
+          --commit-hash="$DEPLOY_COMMIT"
+
+  smoke-production:
+    if: >-
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CHECKLIST_BASE_URL: https://mantou-checklist.pages.dev
+    steps:
+      - name: Check out deployed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install test dependencies
+        run: npm ci
+
+      - name: Smoke test deployed production
+        run: npm run smoke
+
+      - name: Upload failure evidence
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: deployment-smoke-evidence
+          path: test-output/
+          if-no-files-found: ignore
+          retention-days: 14
+
