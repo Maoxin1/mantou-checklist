@@ -39,59 +39,49 @@
         <div class="mobile-section-heading">
           <div>
             <p class="step-label">TODAY</p>
-            <h2 id="mobile-form-title">更新今日状态</h2>
+            <h2 id="mobile-form-title">只更新 3 个事实</h2>
           </div>
           <span id="save-status" class="save-status">已自动保存</span>
         </div>
 
         <form id="checklist-form" autocomplete="off">
           <fieldset>
-            <legend>今天</legend>
+            <legend>今日更新</legend>
             <label>
-              <span>发布日期</span>
-              <input id="date" name="date" type="date" />
+              <span>高质量阅读</span>
+              <small>分钟</small>
+              <input id="reading-minutes" name="readingMinutes" type="number" min="0" max="360" step="5" inputmode="numeric" />
             </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>今日积累</legend>
+            <label>
+              <span>今日训练</span>
+              <select id="training-status" name="trainingStatus">
+                <option value="力量训练">力量训练</option>
+                <option value="激活">激活</option>
+                <option value="恢复">恢复</option>
+                <option value="未训练">未训练</option>
+              </select>
+            </label>
             <label class="switch-row">
               <span>
                 <strong>今日已写日记</strong>
-                <small>只公开完成状态，不公开原文</small>
+                <small>只公开完成状态</small>
               </span>
               <input id="diary-done" name="diaryDone" type="checkbox" />
-            </label>
-            <label>
-              <span>累计有效日记天数</span>
-              <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
-            </label>
-            <label>
-              <span>认知训练</span>
-              <select id="english-status" name="englishStatus">
-                <option value="今日完成">今日完成</option>
-                <option value="今日未开始">今日未开始</option>
-                <option value="休息日">休息日</option>
-              </select>
-            </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>本周行动</legend>
-            <label>
-              <span>本周健身天数</span>
-              <div class="stepper">
-                <button id="gym-minus" type="button" aria-label="健身天数减一">−</button>
-                <input id="gym-count" name="gymCount" type="number" min="0" max="4" step="1" inputmode="numeric" />
-                <button id="gym-plus" type="button" aria-label="健身天数加一">＋</button>
-              </div>
             </label>
           </fieldset>
 
           <details>
             <summary>阶段与成果设置</summary>
             <label>
-              <span>身体阶段</span>
+              <span>发布日期</span>
+              <input id="date" name="date" type="date" />
+            </label>
+            <label>
+              <span>累计有效日记天数</span>
+              <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
+            </label>
+            <label>
+              <span>当前阶段</span>
               <input id="body-phase" name="bodyPhase" type="text" maxlength="24" />
             </label>
             <label>
@@ -103,7 +93,7 @@
               <input id="investment-phase" name="investmentPhase" type="text" maxlength="30" />
             </label>
             <label>
-              <span>认知训练阶段</span>
+              <span>当前阅读</span>
               <input id="reading-phase" name="readingPhase" type="text" maxlength="36" />
             </label>
             <label>
@@ -139,7 +129,7 @@
                 <option value="已通过">已通过</option>
               </select>
             </label>
-            <button id="apply-phase-defaults" class="text-button" type="button">按日期恢复身体阶段默认值</button>
+            <button id="apply-phase-defaults" class="text-button" type="button">恢复当前阶段默认值</button>
           </details>
 
           <details>
@@ -152,7 +142,7 @@
 
           <details>
             <summary>本地数据管理</summary>
-            <p class="backup-description">备份文件只包含这张清单的公开字段，用于清理浏览器数据或更换设备前手动恢复。</p>
+            <p class="backup-description">备份文件只包含这张清单的本地状态，用于清理浏览器数据或更换设备前手动恢复。</p>
             <div class="backup-actions">
               <button id="export-backup" class="button backup-button" type="button">导出备份</button>
               <button id="import-backup" class="button backup-button" type="button">导入恢复</button>
@@ -161,7 +151,7 @@
           </details>
         </form>
 
-        <p class="privacy-note">内容只保存在当前手机浏览器，不上传，也不跨设备同步。</p>
+        <p class="privacy-note">阅读分钟、训练状态和日记状态都只保存在当前设备。</p>
       </section>
 
       <section class="mobile-preview-view" aria-labelledby="mobile-preview-title">
@@ -175,7 +165,7 @@
         <div class="single-preview">
           <img id="preview-forest" alt="松柏档案实时预览" />
         </div>
-        <p class="preview-help">返回“填写”修改任意字段，预览会自动更新。</p>
+        <p class="preview-help">返回“填写”更新 3 个事实，预览会自动重算本周状态。</p>
       </section>
     </main>
 
@@ -184,7 +174,7 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./app.js?v=20"></script>
-    <script type="module" src="./editor.js?v=17"></script>
+    <script type="module" src="./app.js?v=21"></script>
+    <script type="module" src="./editor.js?v=18"></script>
   </body>
 </html>

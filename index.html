@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#1f6b43" />
-    <meta name="description" content="一页式个人定投公开清单生成器" />
+    <meta name="description" content="只更新几个事实，即可生成个人定投状态卡片" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
@@ -16,7 +16,7 @@
       <div>
         <p class="eyebrow">PUBLIC CHECKLIST</p>
         <h1>个人定投清单生成器</h1>
-        <p>填写公开字段，实时生成一页式图片。原始日记、仓位和训练细节不会进入这里。</p>
+        <p>每天只更新阅读分钟、训练状态与日记，系统自动汇总本周状态并生成图片。</p>
       </div>
       <div class="header-actions">
         <span class="brand-wordmark app-wordmark" aria-label="mantou 品牌">mantou</span>
@@ -29,20 +29,49 @@
         <div class="panel-heading">
           <div>
             <p class="step-label">01</p>
-            <h2 id="editor-title">填写今日状态</h2>
+            <h2 id="editor-title">今日更新 · 3 个操作</h2>
           </div>
           <span id="save-status" class="save-status">已自动保存</span>
         </div>
 
         <form id="checklist-form" autocomplete="off">
           <fieldset>
-            <legend>日期与阶段</legend>
+            <legend>今日事实</legend>
+            <label>
+              <span>高质量阅读</span>
+              <small>只填真正专注阅读的分钟数</small>
+              <input id="reading-minutes" name="readingMinutes" type="number" min="0" max="360" step="5" inputmode="numeric" />
+            </label>
+            <label>
+              <span>今日训练</span>
+              <select id="training-status" name="trainingStatus">
+                <option value="力量训练">力量训练</option>
+                <option value="激活">激活</option>
+                <option value="恢复">恢复</option>
+                <option value="未训练">未训练</option>
+              </select>
+            </label>
+            <label class="switch-row">
+              <span>
+                <strong>今日已写日记</strong>
+                <small>只公开完成状态，不公开原文</small>
+              </span>
+              <input id="diary-done" name="diaryDone" type="checkbox" />
+            </label>
+          </fieldset>
+
+          <details>
+            <summary>阶段与成果设置</summary>
             <label>
               <span>发布日期</span>
               <input id="date" name="date" type="date" />
             </label>
             <label>
-              <span>身体阶段</span>
+              <span>累计有效日记天数</span>
+              <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
+            </label>
+            <label>
+              <span>当前阶段</span>
               <input id="body-phase" name="bodyPhase" type="text" maxlength="24" />
             </label>
             <label>
@@ -54,49 +83,9 @@
               <input id="investment-phase" name="investmentPhase" type="text" maxlength="30" />
             </label>
             <label>
-              <span>认知训练阶段</span>
+              <span>当前阅读</span>
               <input id="reading-phase" name="readingPhase" type="text" maxlength="36" />
             </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>每日监督</legend>
-            <label class="switch-row">
-              <span>
-                <strong>今日已写日记</strong>
-                <small>只公开完成状态，不公开原文</small>
-              </span>
-              <input id="diary-done" name="diaryDone" type="checkbox" />
-            </label>
-            <label>
-              <span>累计有效日记天数</span>
-              <small>勾选今日完成时自动加 1；取消时自动减 1</small>
-              <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
-            </label>
-            <label>
-              <span>认知训练</span>
-              <select id="english-status" name="englishStatus">
-                <option value="今日完成">今日完成</option>
-                <option value="今日未开始">今日未开始</option>
-                <option value="休息日">休息日</option>
-              </select>
-            </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>每周监督</legend>
-            <label>
-              <span>本周健身天数</span>
-              <div class="stepper">
-                <button id="gym-minus" type="button" aria-label="健身天数减一">−</button>
-                <input id="gym-count" name="gymCount" type="number" min="0" max="4" step="1" inputmode="numeric" />
-                <button id="gym-plus" type="button" aria-label="健身天数加一">＋</button>
-              </div>
-            </label>
-          </fieldset>
-
-          <fieldset>
-            <legend>本周交付物</legend>
             <label>
               <span>交付物 1</span>
               <input id="next-result" name="nextResult" type="text" maxlength="30" />
@@ -130,7 +119,8 @@
                 <option value="已通过">已通过</option>
               </select>
             </label>
-          </fieldset>
+            <button id="apply-phase-defaults" class="text-button" type="button">恢复当前阶段默认值</button>
+          </details>
 
           <details>
             <summary>高级设置</summary>
@@ -138,14 +128,13 @@
               <span>长期口号</span>
               <input id="motto" name="motto" type="text" maxlength="36" />
             </label>
-            <button id="apply-phase-defaults" class="text-button" type="button">按日期恢复身体阶段默认值</button>
           </details>
         </form>
 
         <div class="editor-actions">
           <button id="download-button" class="button button-primary" type="button">生成并下载 PNG</button>
         </div>
-        <p class="privacy-note">所有填写内容默认仅保存在当前浏览器的本地存储中。</p>
+        <p class="privacy-note">日常只需改 3 个字段；所有内容默认仅保存在当前浏览器。</p>
       </section>
 
       <section class="preview-panel" aria-labelledby="preview-title">
@@ -164,6 +153,6 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=20"></script>
+    <script type="module" src="./app.js?v=21"></script>
   </body>
 </html>

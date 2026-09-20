@@ -1,21 +1,18 @@
 {
   "diaryDay": 1291,
+  "bodyPhase": "作息重构实验 V1",
+  "bodyMeta": "5:00–8:00",
   "investmentPhase": "主动投资系统建设中",
-  "readingPhase": "Beyond Feelings · W1",
-  "englishStatus": "今日未开始",
-  "nextResult": "批判性判断框架 v0.1",
+  "readingPhase": "认知类书籍",
+  "readingTargetMinutes": 90,
+  "weeklyReadingTargetMinutes": 450,
+  "weeklyStrengthTarget": 3,
+  "trainingStatus": "未训练",
+  "nextResult": "完成14天 V1 验收",
   "nextResultDate": "待验收",
   "nextResult2": "",
   "nextResultDate2": "待验收",
   "nextResult3": "",
   "nextResultDate3": "待验收",
-  "motto": "把时间转化为能力、资本与自主权。",
-  "beforeDeadline": {
-    "bodyPhase": "减脂收官",
-    "bodyMeta": "9.19验收"
-  },
-  "afterDeadline": {
-    "bodyPhase": "精干强健计划",
-    "bodyMeta": "持续期"
-  }
+  "motto": "把时间转化为能力、资本与自主权。"
 }
