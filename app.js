@@ -29,6 +29,7 @@ const elements = {
   investmentPhase: document.querySelector("#investment-phase"),
   readingPhase: document.querySelector("#reading-phase"),
   readingMinutes: document.querySelector("#reading-minutes"),
+  readingMinutesValue: document.querySelector("#reading-minutes-value"),
   trainingStatus: document.querySelector("#training-status"),
   diaryDone: document.querySelector("#diary-done"),
   diaryDay: document.querySelector("#diary-day"),
@@ -117,8 +118,8 @@ function buildInitialState(saved, today) {
     investmentPhase: saved?.investmentPhase || config.investmentPhase,
     readingPhase: migrateLegacyText(saved?.readingPhase, ["Beyond Feelings · W1"], config.readingPhase),
     readingMinutes: sameDay && saved?.readingMinutes !== undefined
-      ? clamp(saved.readingMinutes, 0, 360)
-      : clamp(daily.readingMinutes, 0, 360),
+      ? normalizeReadingMinutes(saved.readingMinutes)
+      : normalizeReadingMinutes(daily.readingMinutes),
     trainingStatus: sameDay && saved?.trainingStatus
       ? normalizeTrainingStatus(saved.trainingStatus)
       : normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus),
@@ -137,7 +138,8 @@ function buildInitialState(saved, today) {
 }
 
 function bindEvents() {
-  elements.form.addEventListener("input", () => {
+  elements.form.addEventListener("input", (event) => {
+    if (event.target === elements.readingMinutes) syncReadingSlider();
     render();
     queueSave();
   });
@@ -150,7 +152,7 @@ function bindEvents() {
       activeWeekKey = nextWeek;
     }
     const daily = weeklyLog[nextDate] || {};
-    elements.readingMinutes.value = clamp(daily.readingMinutes, 0, 360);
+    elements.readingMinutes.value = normalizeReadingMinutes(daily.readingMinutes);
     elements.trainingStatus.value = normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus);
     elements.diaryDone.checked = Boolean(daily.diaryDone);
     lastDiaryDone = elements.diaryDone.checked;
@@ -192,7 +194,8 @@ function fillForm(state) {
   elements.bodyMeta.value = state.bodyMeta;
   elements.investmentPhase.value = state.investmentPhase;
   elements.readingPhase.value = state.readingPhase;
-  elements.readingMinutes.value = state.readingMinutes;
+  elements.readingMinutes.value = normalizeReadingMinutes(state.readingMinutes);
+  syncReadingSlider();
   elements.trainingStatus.value = state.trainingStatus;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
@@ -203,6 +206,17 @@ function fillForm(state) {
   elements.nextResult3.value = state.nextResult3;
   elements.nextResultDate3.value = state.nextResultDate3;
   elements.motto.value = state.motto;
+}
+
+function syncReadingSlider(value = elements.readingMinutes.value) {
+  const minutes = normalizeReadingMinutes(value);
+  const min = Number(elements.readingMinutes.min) || 0;
+  const max = Number(elements.readingMinutes.max) || 180;
+  const progress = max > min ? ((minutes - min) / (max - min)) * 100 : 0;
+  elements.readingMinutes.value = String(minutes);
+  elements.readingMinutesValue.textContent = `${minutes} 分钟`;
+  elements.readingMinutes.setAttribute("aria-valuetext", `${minutes} 分钟`);
+  elements.readingMinutes.style.setProperty("--slider-progress", `${progress}%`);
 }
 
 function render(immediate = false) {
@@ -226,7 +240,7 @@ function getFormState() {
     activeWeekKey = weekKey;
   }
 
-  const readingMinutes = clamp(elements.readingMinutes.value, 0, 360);
+  const readingMinutes = normalizeReadingMinutes(elements.readingMinutes.value);
   const trainingStatus = normalizeTrainingStatus(elements.trainingStatus.value);
   const diaryDone = elements.diaryDone.checked;
 
@@ -518,6 +532,11 @@ function migrateLegacyText(value, oldDefaults, newDefault) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text || oldDefaults.includes(text)) return newDefault;
   return text;
+}
+
+function normalizeReadingMinutes(value) {
+  const clamped = clamp(value, 0, 180);
+  return Math.round(clamped / 5) * 5;
 }
 
 function normalizeTrainingStatus(value) {
