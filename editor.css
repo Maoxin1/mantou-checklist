@@ -316,3 +316,18 @@
     border-radius: 17px;
   }
 }
+
+
+/* Reading slider · mobile */
+.mobile-editor-page .reading-slider-group {
+  margin-top: 0.45rem;
+}
+
+.mobile-editor-page input.reading-slider {
+  min-height: 52px;
+  font-size: 16px;
+}
+
+.mobile-editor-page .reading-slider-value {
+  font-size: 1.45rem;
+}
