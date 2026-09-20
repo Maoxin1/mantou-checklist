@@ -1,6 +1,6 @@
 # mantou 个人定投清单
 
-一个本地优先、可离线使用的个人长期行动清单生成器。它把每天需要公开的少量状态整理成一张 1080 × 1536 PNG，适合发布到微信群、社群或个人博客。
+一个本地优先、可离线使用的个人长期行动清单生成器。日常只需要更新少量事实，就能自动汇总状态并生成一张 1080 × 1536 PNG，适合发布到微信群、社群或个人博客。
 
 > 这里的“定投”不只指金钱，也指把时间持续投入认知、表达、身体与长期能力。
 
@@ -9,23 +9,44 @@
 - 主页生成器：<https://mantou-checklist.pages.dev/>
 - 手机编辑器：<https://mantou-checklist.pages.dev/editor>
 
-<p align="center">
-  <img src="./docs/images/editor-mobile-form.png" width="280" alt="手机填写界面" />
-  &nbsp;&nbsp;
-  <img src="./docs/images/editor-mobile-preview.png" width="280" alt="手机预览界面" />
-</p>
+## 日常使用
+
+V2 将日常输入收敛为 3 个字段：
+
+1. 高质量阅读分钟
+2. 今日训练：力量训练 / 激活 / 恢复 / 未训练
+3. 日记完成状态
+
+日期、当前阶段、当前阅读、投资阶段和本周交付物都属于低频设置，正常一天不需要修改。
+
+系统会自动计算：
+
+- 本周高质量阅读时间
+- 本周力量训练次数
+- 当前周状态
+- 1080 × 1536 公开 PNG
+
+目标是从打开 PWA 到生成图片，正常情况下不超过 15 秒。
 
 ## 它能做什么
 
-- 填写日记、认知训练和每周健身状态
-- 记录当前身体阶段、投资阶段与认知训练阶段
-- 最多填写三个本周交付物，并分别标记“待验收”或“已通过”
+- 记录每日 3 个最小事实并自动保存
+- 自动汇总当前周阅读时长和力量训练次数
+- 记录当前作息实验、投资阶段、阅读材料与本周交付物
 - 实时生成“松柏档案”风格图片
 - 一键下载 1080 × 1536 PNG
-- 自动保存到当前浏览器
-- 首次联网安装后，可离线填写、预览和下载
+- 首次联网安装后离线填写、预览和下载
 - 导出 JSON 备份，并在另一台设备手动导入恢复
+- 兼容旧版本地数据，自动迁移上一阶段默认字段
 - 针对触控、窄屏和主流移动端浏览器设计
+
+## 隐私与数据边界
+
+这个项目没有后端数据库，也没有接入统计脚本。表单数据和自动保存内容默认只写入当前浏览器的 `localStorage`。
+
+V2 只为当前周保存极简日志：每天的阅读分钟、训练状态和日记完成状态。它不是健康数据库，也不会记录或公开具体血糖、症状、睡眠原始日志、仓位、金额等私人数据。
+
+建议定期打开“本地数据管理”，下载 JSON 备份。不要在公开 Issue、聊天群或截图中上传包含私人信息的备份文件。
 
 ## 移动端安装与离线使用
 
@@ -35,34 +56,17 @@
 2. 点击页面右上角的“安装”。
 3. 如果没有弹出安装窗口，请打开浏览器菜单，选择“安装应用”或“添加到主屏幕”。
 
-不同设备和浏览器显示的菜单名称可能略有不同。
-
 ### iPhone / iPad
 
 1. 使用 Safari 打开[手机编辑器](https://mantou-checklist.pages.dev/editor)。
 2. 点击“分享”，选择“添加到主屏幕”。
 3. 开启“作为 Web App 打开”，然后点击“添加”。
 
-### 离线使用
-
-第一次加载和安装需要网络。成功打开一次后，即使电脑关闭或手机暂时断网，仍可填写、自动保存、预览、备份并下载图片。升级到新版本时，建议联网打开一次以获取更新。
-
-## 隐私与数据边界
-
-这个项目没有后端数据库，也没有接入统计脚本。表单数据和自动保存内容默认只写入当前浏览器的 `localStorage`：
-
-- 其他访问者无法看到你的本地清单
-- 数据不会自动跨设备同步
-- 清理浏览器数据、恢复出厂设置或删除站点数据可能导致记录丢失
-- 不同域名之间的数据不会自动迁移
-
-建议定期打开“本地数据管理”，下载 JSON 备份。不要在公开 Issue、聊天群或截图中上传包含私人信息的备份文件。
-
-网站本身和源代码是公开的。请勿把日记原文、仓位、金额、账户总收益、API 密钥或其他秘密写入 `config.json`、HTML 或 JavaScript 文件。
+第一次加载和安装需要网络。成功打开一次后，即使暂时断网，仍可填写、预览、备份并下载图片。
 
 ## 本地运行
 
-运行和构建需要 Node.js 20+。本地服务器使用 Wrangler 模拟 Cloudflare Pages 的无扩展名路由；只有自动化测试、文档截图和重新生成图标时需要 Chrome/Chromium。
+需要 Node.js 20+。
 
 ```powershell
 git clone https://github.com/Maoxin1/mantou-checklist.git
@@ -79,71 +83,53 @@ npm run serve
 常用命令：
 
 ```powershell
-npm run check   # JavaScript 语法检查
-npm run smoke   # 主页、手机、备份、离线和下载测试
-npm run build   # 生成 Cloudflare Pages 发布目录 dist/
+npm run check
+npm run smoke
+npm run build
 ```
 
-运行 `npm run smoke` 前，请在另一个终端保持 `npm run serve` 运行。脚本会自动寻找常见位置的 Chrome/Chromium；如果浏览器安装在其他位置，请设置 `CHROME_PATH` 环境变量。
+## 默认配置
 
-## 改成自己的版本
-
-常用默认文案集中在 [`config.json`](./config.json)：
+常用默认文案集中在 `config.json`：
 
 - `diaryDay`：累计有效日记天数起点
-- `investmentPhase`：当前长期项目或专业阶段
-- `readingPhase`：当前认知训练材料与阶段，例如 `Beyond Feelings · W1`
-- `englishStatus`：认知训练的今日状态；沿用旧字段名以兼容现有本地数据
-- `nextResult` / `nextResultDate`：交付物 1 与验收状态；沿用旧字段名以兼容现有本地数据
-- `nextResult2` / `nextResultDate2`：交付物 2 与验收状态
-- `nextResult3` / `nextResultDate3`：交付物 3 与验收状态
+- `bodyPhase` / `bodyMeta`：当前主实验与阶段补充
+- `investmentPhase`：当前投资阶段
+- `readingPhase`：当前阅读材料或阅读阶段
+- `readingTargetMinutes`：每日阅读参考目标
+- `weeklyReadingTargetMinutes`：每周高质量阅读参考目标
+- `weeklyStrengthTarget`：每周力量训练参考次数
+- `nextResult*`：最多三个本周交付物及验收状态
 - `motto`：长期口号
-- `beforeDeadline` / `afterDeadline`：身体阶段切换前后的默认内容
 
-视觉颜色和手机布局位于 `styles.css`、`editor.css`；1080 × 1536 成图规则位于 `app.js` 的 Canvas 绘图函数中。
-
-如果你公开部署自己的版本，请同步替换 `mantou` 品牌字样、默认目标和图标，避免让使用者误以为是同一个官方实例。
+视觉颜色和手机布局位于 `styles.css`、`editor.css`；1080 × 1536 成图规则位于 `app.js`。
 
 ## Cloudflare Pages 部署
 
-项目继续使用 Cloudflare Pages Direct Upload，但发布流程改为与 `mantou-blog` 一致的自动流水线：
+项目使用与 `mantou-blog` 一致的自动发布路径：
 
 1. Pull Request 与 `main` push 先运行 `Validate`；
 2. 只有 `main` 上的 `Validate` 成功后，`Deploy Pages` 才构建并发布同一 commit；
-3. 发布完成后自动对正式站运行 smoke test；
-4. 需要预览其他分支、标签或 commit 时，可手动运行 `Deploy Pages` 并填写 `source_ref`。
+3. 发布完成后自动运行正式站 smoke test；
+4. 手动预览可在 `Deploy Pages` 中指定 `source_ref`。
 
-部署凭据只在 `pages-deploy` Environment 的 deploy job 中读取。仓库需要配置：
+`pages-deploy` Environment 需要：
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
 
-本地仍可手动验证构建：
-
-```powershell
-npm ci
-npm run check
-npm run build
-```
-
-正常更新不再需要本地执行 `wrangler pages deploy`。
-
 ## 项目结构
 
 ```text
-index.html / styles.css      桌面主页生成器
-editor.html / editor.css    独立手机编辑器
-app.js                      状态、保存、Canvas 成图与 PWA 安装
+index.html / styles.css      桌面生成器
+editor.html / editor.css    手机编辑器
+app.js                      状态、周统计、Canvas 成图与 PWA 安装
 editor.js                   手机切换、离线提示和备份恢复
 sw.js                       离线缓存
-config.json                 可修改的默认文案
+config.json                 默认阶段与目标
 scripts/                    构建、截图与自动化测试
 ```
 
-## 参与改进
-
-欢迎提交 Issue 和 Pull Request。开始前请阅读 [`CONTRIBUTING.md`](./CONTRIBUTING.md)；安全问题请阅读 [`SECURITY.md`](./SECURITY.md)。
-
 ## 许可证
 
-[MIT License](./LICENSE)。你可以使用、修改和再发布，但需要保留许可证和版权声明。
+[MIT License](./LICENSE)。

@@ -44,7 +44,7 @@ function exportBackup() {
   const state = window.checklistStorage.save();
   const payload = {
     format: "mantou-personal-investment-checklist",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     state
   };
@@ -79,8 +79,7 @@ function isValidBackupState(state) {
     state &&
     typeof state === "object" &&
     typeof state.date === "string" &&
-    Number.isFinite(Number(state.diaryDay)) &&
-    Number.isFinite(Number(state.gymCount))
+    Number.isFinite(Number(state.diaryDay))
   );
 }
 
