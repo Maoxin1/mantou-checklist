@@ -8,8 +8,8 @@
     <link rel="manifest" href="./editor.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=16" />
-    <link rel="stylesheet" href="./editor.css?v=16" />
+    <link rel="stylesheet" href="./styles.css?v=17" />
+    <link rel="stylesheet" href="./editor.css?v=17" />
     <title>个人定投清单 · 手机编辑器</title>
   </head>
   <body class="mobile-editor-page">
@@ -47,11 +47,30 @@
         <form id="checklist-form" autocomplete="off">
           <fieldset>
             <legend>今日更新</legend>
-            <label>
-              <span>高质量阅读</span>
-              <small>分钟</small>
-              <input id="reading-minutes" name="readingMinutes" type="number" min="0" max="360" step="5" inputmode="numeric" />
-            </label>
+            <div class="reading-slider-group">
+              <div class="reading-slider-header">
+                <label for="reading-minutes">
+                  <span>高质量阅读</span>
+                  <small>滑动选择专注阅读分钟数</small>
+                </label>
+                <output id="reading-minutes-value" class="reading-slider-value" for="reading-minutes">0 分钟</output>
+              </div>
+              <input
+                id="reading-minutes"
+                class="reading-slider"
+                name="readingMinutes"
+                type="range"
+                min="0"
+                max="180"
+                step="5"
+                value="0"
+                aria-describedby="reading-target-note"
+              />
+              <div class="reading-slider-scale" aria-hidden="true">
+                <span>0</span><span>30</span><span>60</span><span>90</span><span>120</span><span>150</span><span>180</span>
+              </div>
+              <p id="reading-target-note" class="reading-target-note"><span aria-hidden="true"></span>目标 90 分钟</p>
+            </div>
             <label>
               <span>今日训练</span>
               <select id="training-status" name="trainingStatus">
@@ -174,7 +193,7 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./app.js?v=21"></script>
+    <script type="module" src="./app.js?v=22"></script>
     <script type="module" src="./editor.js?v=18"></script>
   </body>
 </html>
