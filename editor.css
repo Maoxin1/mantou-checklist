@@ -316,3 +316,31 @@
     border-radius: 17px;
   }
 }
+
+
+.mobile-editor-page .reading-control {
+  margin-top: 0.25rem;
+}
+
+.mobile-editor-page .reading-control-head {
+  align-items: center;
+}
+
+.mobile-editor-page .reading-value {
+  font-size: 1.45rem;
+}
+
+.mobile-editor-page .reading-range {
+  min-height: 52px;
+  margin-top: 0.5rem;
+  padding: 14px 0;
+}
+
+.mobile-editor-page .reading-marks {
+  font-size: 0.7rem;
+}
+
+.mobile-editor-page .reading-target {
+  margin-top: 0.35rem;
+  font-size: 0.74rem;
+}

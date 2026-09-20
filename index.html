@@ -8,7 +8,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=16" />
+    <link rel="stylesheet" href="./styles.css?v=17" />
     <title>个人定投清单生成器</title>
   </head>
   <body>
@@ -37,11 +37,20 @@
         <form id="checklist-form" autocomplete="off">
           <fieldset>
             <legend>今日事实</legend>
-            <label>
-              <span>高质量阅读</span>
-              <small>只填真正专注阅读的分钟数</small>
-              <input id="reading-minutes" name="readingMinutes" type="number" min="0" max="360" step="5" inputmode="numeric" />
-            </label>
+            <div class="reading-control">
+              <div class="reading-control-head">
+                <div>
+                  <span class="reading-control-title">高质量阅读</span>
+                  <small>只记录真正专注阅读的时间</small>
+                </div>
+                <output id="reading-minutes-value" class="reading-value" for="reading-minutes">0 分钟</output>
+              </div>
+              <input id="reading-minutes" class="reading-range" name="readingMinutes" type="range" min="0" max="180" step="5" value="0" aria-describedby="reading-target" />
+              <div class="reading-marks" aria-hidden="true">
+                <span>0</span><span>30</span><span>60</span><span class="target-mark">90</span><span>120</span><span>150</span><span>180</span>
+              </div>
+              <p id="reading-target" class="reading-target">目标 90 分钟</p>
+            </div>
             <label>
               <span>今日训练</span>
               <select id="training-status" name="trainingStatus">
@@ -153,6 +162,6 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=21"></script>
+    <script type="module" src="./app.js?v=22"></script>
   </body>
 </html>
