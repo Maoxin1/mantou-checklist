@@ -373,13 +373,13 @@ function drawEvergreenPoster(context, state, fontFamily) {
 
   drawArchiveCard(context, 54, 630, 972, 310, theme.white, theme.primary);
   drawFitText(context, "今日积累", 94, 692, 300, 29, 900, fontFamily, theme.primary);
-  drawArchiveRow(context, 94, 772, "阅读", `${state.readingMinutes} 分钟 · 目标 ≥ ${readingTarget}`, theme, fontFamily);
+  drawArchiveRow(context, 94, 772, "破界行动", `${state.readingMinutes} 分钟 · 目标 ≥ ${readingTarget}`, theme, fontFamily);
   drawArchiveRow(context, 94, 848, "训练", state.trainingStatus, theme, fontFamily);
   drawArchiveRow(context, 94, 924, "日记", `${diaryText} · 累计有效 ${state.diaryDay} 天`, theme, fontFamily);
 
   drawArchiveCard(context, 54, 976, 972, 250, theme.white, theme.gold);
   drawFitText(context, "本周进度", 94, 1038, 300, 29, 900, fontFamily, theme.gold);
-  drawFitText(context, "高质量阅读", 94, 1102, 260, 24, 800, fontFamily, theme.muted);
+  drawFitText(context, "破界行动", 94, 1102, 260, 24, 800, fontFamily, theme.muted);
   drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, 1150, 390, 36, 900, fontFamily, theme.ink);
   drawProgressBar(context, 94, 1180, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
   drawFitText(context, "力量训练", 586, 1102, 220, 24, 800, fontFamily, theme.muted);
