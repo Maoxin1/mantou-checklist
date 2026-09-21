@@ -47,7 +47,7 @@ async function testInstallHelp(userAgent, expectedText) {
 const mainPage = await browser.newPage({ viewport: { width: 1280, height: 900 }, acceptDownloads: true });
 const mainErrors = [];
 mainPage.on("pageerror", (error) => mainErrors.push(error.message));
-await mainPage.goto(`${baseUrl}/?v=22`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+await mainPage.goto(`${baseUrl}/?v=23`, { waitUntil: "domcontentloaded", timeout: 15_000 });
 await mainPage.locator("#reading-minutes").waitFor({ state: "visible", timeout: 10_000 });
 await mainPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 
@@ -83,7 +83,7 @@ const posterText = await mainPage.evaluate(() => {
   }
   return text;
 });
-for (const expectedText of ["作息重构实验 V1 · 5:00–8:00", "100 分钟 · 目标 ≥ 90", "力量训练", "本周进度", "完成14天 V1 验收"]) {
+for (const expectedText of ["作息重构实验 V1 · 5:00–8:00", "破界行动", "100 分钟 · 目标 ≥ 90", "力量训练", "本周进度", "完成14天 V1 验收"]) {
   if (!posterText.includes(expectedText)) throw new Error(`成图缺少关键信息：${expectedText}`);
 }
 
