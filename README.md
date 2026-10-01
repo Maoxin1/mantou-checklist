@@ -66,12 +66,12 @@ V2 只为当前周保存极简日志：每天的破界行动分钟、训练状�
 
 ## 本地运行
 
-需要 Node.js 20+。
+需要 Node.js 22+，推荐与 CI 一致的 Node.js 24。
 
 ```powershell
 git clone https://github.com/Maoxin1/mantou-checklist.git
 cd mantou-checklist
-npm install
+npm ci
 npm run serve
 ```
 
@@ -85,8 +85,11 @@ npm run serve
 ```powershell
 npm run check
 npm run smoke
+npm run smoke:local
 npm run build
 ```
+
+`npm run smoke:local` 会构建并启动本地 Wrangler 预览，验证保存、备份恢复、离线启动和 PNG 导出，完成后关闭预览。需要安装 Chrome/Chromium，或通过 `CHROME_PATH` 指定浏览器路径。PR 必过检查运行同一套测试；`npm run smoke` 仍用于检查已启动的本地预览或 `CHECKLIST_BASE_URL` 指定的站点。
 
 ## 默认配置
 
