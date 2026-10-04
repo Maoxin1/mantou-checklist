@@ -1,4 +1,5 @@
 import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, parseLocalState, makeBackup } from "./state.js";
+import { drawIdentity } from "./identity.js";
 
 const fallbackConfig = {
   diaryDay: 1291,
@@ -475,7 +476,7 @@ function createPosterDataUrl() {
   canvas.width = 1080;
   canvas.height = 1536;
   const context = canvas.getContext("2d");
-  const fontFamily = "SamsungOne, 'Noto Sans SC', 'Microsoft YaHei', sans-serif";
+  const fontFamily = "'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif";
   context.textBaseline = "alphabetic";
   drawEvergreenPoster(context, state, fontFamily);
   return canvas.toDataURL("image/png");
@@ -483,15 +484,15 @@ function createPosterDataUrl() {
 
 function drawEvergreenPoster(context, state, fontFamily) {
   const theme = {
-    primary: "#245c46",
-    dark: "#173c2e",
-    paper: "#f3f1ea",
-    ink: "#19211d",
-    muted: "#6c756f",
-    line: "#d9ddd7",
-    soft: "#e2e7e3",
-    gold: "#b28a55",
-    white: "#ffffff"
+    primary: "#a84e32",
+    dark: "#292824",
+    paper: "#fffaf1",
+    ink: "#292824",
+    muted: "#6b6258",
+    line: "#d9cebe",
+    soft: "#e5e0d3",
+    gold: "#71523f",
+    white: "#fffcf7"
   };
   const stats = getWeeklyStats(state);
   const readingTarget = Number(config.readingTargetMinutes) || 90;
@@ -501,33 +502,35 @@ function drawEvergreenPoster(context, state, fontFamily) {
 
   context.fillStyle = theme.paper;
   context.fillRect(0, 0, 1080, 1536);
-  context.fillStyle = theme.primary;
-  context.fillRect(0, 0, 1080, 270);
-
-  drawFitText(context, "mantou", 72, 68, 240, 30, 900, fontFamily, theme.white);
-  drawFitText(context, formatDisplayDate(state.date), 1008, 68, 320, 30, 800, fontFamily, "#dbe8df", "right");
-  drawFitText(context, "个人定投", 72, 166, 640, 72, 900, fontFamily, theme.white);
-  drawFitText(context, state.motto || config.motto, 72, 225, 900, 28, 700, fontFamily, "#dbe8df");
+  drawIdentity(context, "wordmark", 72, 43, 196, 51);
+  drawFitText(context, formatDisplayDate(state.date), 1008, 80, 320, 28, 600, fontFamily, theme.muted, "right");
+  drawFitText(context, "个人定投 · 行动档案", 72, 177, 815, 60, 700, fontFamily, theme.ink);
+  context.fillStyle = "#edc29e";
+  context.fillRect(74, 195, 476, 7);
+  drawFitText(context, state.motto || config.motto, 72, 249, 850, 28, 400, fontFamily, theme.muted);
+  drawIdentity(context, "walker", 935, 142, 54, 98);
+  context.fillStyle = theme.line;
+  context.fillRect(72, 286, 936, 2);
 
   drawArchiveCard(context, 54, 314, 972, 280, theme.white, theme.primary);
-  drawFitText(context, "阶段推进", 94, 376, 300, 29, 900, fontFamily, theme.primary);
-  drawArchiveRow(context, 94, 452, "主实验", `${state.bodyPhase || "未填写"}${state.bodyMeta ? ` · ${state.bodyMeta}` : ""}`, theme, fontFamily);
-  drawArchiveRow(context, 94, 518, "投资", state.investmentPhase || "未填写", theme, fontFamily);
-  drawArchiveRow(context, 94, 584, "当前阅读", state.readingPhase || "未填写", theme, fontFamily);
+  drawFitText(context, "阶段推进", 94, 376, 300, 29, 700, fontFamily, theme.primary);
+  drawArchiveRow(context, 94, 438, "主实验", `${state.bodyPhase || "未填写"}${state.bodyMeta ? ` · ${state.bodyMeta}` : ""}`, theme, fontFamily);
+  drawArchiveRow(context, 94, 502, "投资", state.investmentPhase || "未填写", theme, fontFamily);
+  drawArchiveRow(context, 94, 566, "当前阅读", state.readingPhase || "未填写", theme, fontFamily);
 
-  drawArchiveCard(context, 54, 630, 972, 310, theme.white, theme.primary);
-  drawFitText(context, "今日积累", 94, 692, 300, 29, 900, fontFamily, theme.primary);
-  drawArchiveRow(context, 94, 772, "破界行动", `${state.readingMinutes} 分钟 · 目标 ≥ ${readingTarget}`, theme, fontFamily);
-  drawArchiveRow(context, 94, 848, "训练", state.trainingStatus, theme, fontFamily);
-  drawArchiveRow(context, 94, 924, "日记", `${diaryText} · 累计有效 ${state.diaryDay} 天`, theme, fontFamily);
+  drawArchiveCard(context, 54, 630, 972, 310, "#edf0e3", theme.primary);
+  drawFitText(context, "今日积累", 94, 692, 300, 29, 700, fontFamily, theme.primary);
+  drawArchiveRow(context, 94, 760, "破界行动", `${state.readingMinutes} 分钟 · 目标 ≥ ${readingTarget}`, theme, fontFamily);
+  drawArchiveRow(context, 94, 834, "训练", state.trainingStatus, theme, fontFamily);
+  drawArchiveRow(context, 94, 908, "日记", `${diaryText} · 累计有效 ${state.diaryDay} 天`, theme, fontFamily);
 
-  drawArchiveCard(context, 54, 976, 972, 250, theme.white, theme.gold);
-  drawFitText(context, "本周进度", 94, 1038, 300, 29, 900, fontFamily, theme.gold);
-  drawFitText(context, "破界行动", 94, 1102, 260, 24, 800, fontFamily, theme.muted);
-  drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, 1150, 390, 36, 900, fontFamily, theme.ink);
+  drawArchiveCard(context, 54, 976, 972, 250, "#f5e8de", theme.gold);
+  drawFitText(context, "本周进度", 94, 1038, 300, 29, 700, fontFamily, theme.gold);
+  drawFitText(context, "破界行动", 94, 1102, 260, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, 1150, 390, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 94, 1180, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
-  drawFitText(context, "力量训练", 586, 1102, 220, 24, 800, fontFamily, theme.muted);
-  drawFitText(context, `${stats.strengthCount} / ${weeklyStrengthTarget} 次`, 586, 1150, 300, 36, 900, fontFamily, theme.ink);
+  drawFitText(context, "力量训练", 586, 1102, 220, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, `${stats.strengthCount} / ${weeklyStrengthTarget} 次`, 586, 1150, 300, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 586, 1180, 330, 14, stats.strengthCount, weeklyStrengthTarget, theme);
 
   const deliverables = [
@@ -538,7 +541,7 @@ function drawEvergreenPoster(context, state, fontFamily) {
 
   const resultsHeight = 70 + Math.max(1, deliverables.length) * 48;
   drawArchiveCard(context, 54, 1250, 972, resultsHeight, theme.white, theme.gold);
-  drawFitText(context, "本周交付物", 94, 1300, 300, 27, 900, fontFamily, theme.gold);
+  drawFitText(context, "本周交付物", 94, 1300, 300, 27, 700, fontFamily, theme.gold);
   if (deliverables.length) {
     deliverables.forEach((item, index) => {
       drawResultRow(context, 94, 1344 + index * 45, String(index + 1).padStart(2, "0"), item.value, item.status, theme, fontFamily);
@@ -549,24 +552,24 @@ function drawEvergreenPoster(context, state, fontFamily) {
 
   context.fillStyle = theme.line;
   context.fillRect(72, 1484, 936, 2);
-  drawFitText(context, "输入事实，让系统负责计算状态。", 72, 1520, 850, 27, 700, fontFamily, theme.muted);
+  drawFitText(context, "每天一点，慢慢向前。", 72, 1520, 850, 27, 700, fontFamily, theme.muted);
 }
 
 function drawArchiveCard(context, x, y, width, height, fill, accent) {
-  drawRoundedFill(context, x, y, width, height, 24, fill);
+  drawRoundedFill(context, x, y, width, height, 18, fill);
   context.fillStyle = accent;
-  context.fillRect(x, y + 28, 7, height - 56);
+  context.fillRect(x + 22, y + 27, 5, 32);
 }
 
 function drawArchiveRow(context, x, baseline, label, value, theme, fontFamily) {
-  drawFitText(context, label, x, baseline, 150, 27, 800, fontFamily, theme.muted);
-  drawFitText(context, value, x + 170, baseline, 740, 34, 650, fontFamily, theme.ink);
+  drawFitText(context, label, x, baseline, 150, 27, 600, fontFamily, theme.muted);
+  drawFitText(context, value, x + 170, baseline, 740, 34, 400, fontFamily, theme.ink);
 }
 
 function drawResultRow(context, x, baseline, index, value, status, theme, fontFamily) {
-  drawFitText(context, index, x, baseline, 44, 24, 900, fontFamily, theme.gold);
-  drawFitText(context, value, x + 58, baseline, 630, 28, 800, fontFamily, theme.ink);
-  drawFitText(context, status, x + 884, baseline, 170, 23, 800, fontFamily, status === "已通过" ? theme.primary : theme.muted, "right");
+  drawFitText(context, index, x, baseline, 44, 24, 700, fontFamily, theme.gold);
+  drawFitText(context, value, x + 58, baseline, 630, 28, 600, fontFamily, theme.ink);
+  drawFitText(context, status, x + 884, baseline, 170, 23, 600, fontFamily, status === "已通过" ? theme.primary : theme.muted, "right");
 }
 
 function drawProgressBar(context, x, y, width, height, value, target, theme) {

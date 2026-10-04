@@ -1,14 +1,17 @@
-const CACHE_NAME = "personal-investment-checklist-v27";
+const CACHE_NAME = "personal-investment-checklist-v28";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./editor",
-  "./styles.css?v=19",
-  "./editor.css?v=18",
-  "./app.js?v=25",
-  "./editor.js?v=19",
+  "./styles.css?v=20",
+  "./editor.css?v=19",
+  "./app.js?v=26",
+  "./editor.js?v=20",
   "./config.json",
   "./state.js",
+  "./identity.js",
+  "./identity/mantou-wordmark-ink.svg",
+  "./identity/mantou-p1-walk.svg",
   "./backup.js",
   "./manifest.webmanifest",
   "./editor.webmanifest",

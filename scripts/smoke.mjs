@@ -106,6 +106,7 @@ const editorPage = await editorContext.newPage();
 const editorErrors = [];
 editorPage.on("pageerror", (error) => editorErrors.push(error.message));
 await editorPage.goto(`${baseUrl}/editor`, { waitUntil: "domcontentloaded", timeout: 15_000 });
+await editorPage.locator("[data-editor-view='preview']").click();
 await editorPage.locator(".mobile-preview-view").waitFor({ state: "visible", timeout: 10_000 });
 await editorPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 

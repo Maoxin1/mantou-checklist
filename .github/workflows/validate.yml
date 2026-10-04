@@ -31,6 +31,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install complete Chinese fonts for visual evidence
+        run: sudo apt-get update -qq && sudo apt-get install -y fonts-noto-cjk
+
       - name: Check JavaScript syntax
         run: npm run check
 
@@ -45,6 +48,18 @@ jobs:
 
       - name: Test offline app and backup smoke flows
         run: npm run smoke:local
+
+      - name: Test responsive UI and capture browser evidence
+        run: npm run test:visual
+
+      - name: Upload browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: checklist-browser-evidence
+          path: test-output/
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Audit high-severity dependencies
         run: npm audit --audit-level=high

@@ -461,8 +461,9 @@ try {
     const migrated = await snapshot(page);
     assert.deepEqual(migrated, { ...legacy, diaryDay: 2 });
     assert.equal(await storage(page), raw, "Read-time migration must not overwrite the source value");
-    assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "preview");
-    assert.equal(await page.locator("#data-notice").isVisible(), true, "Migration notice must be visible in the default preview view");
+    assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "form");
+    await page.locator('[data-editor-view="preview"]').click();
+    assert.equal(await page.locator("#data-notice").isVisible(), true, "Migration notice must be visible in the preview view");
     assert.match(await page.locator("#data-notice").textContent(), /从 0 校正为 2/);
     await downloadPNG(page);
     assert.equal(await page.locator("#data-notice").isVisible(), true, "Saving from preview must not erase the correction notice");

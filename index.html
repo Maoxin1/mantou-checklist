@@ -3,34 +3,45 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#1f6b43" />
+    <meta name="theme-color" content="#fffaf1" />
     <meta name="description" content="只更新几个事实，即可生成个人定投状态卡片" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=19" />
+    <link rel="stylesheet" href="./styles.css?v=20" />
     <title>个人定投清单生成器</title>
   </head>
   <body>
+    <a class="skip-link" href="#checklist-form">跳到今日填写</a>
     <header class="app-header">
-      <div>
-        <p class="eyebrow">PUBLIC CHECKLIST</p>
-        <h1>个人定投清单生成器</h1>
-        <p>每天只更新破界行动、训练状态与日记，系统自动汇总本周状态并生成图片。</p>
-      </div>
+      <a class="brand-link" href="https://mantou-blog.pages.dev/" aria-label="mantou 博客">
+        <img class="brand-wordmark app-wordmark" src="./identity/mantou-wordmark-ink.svg" alt="mantou" width="144" height="40" />
+      </a>
       <div class="header-actions">
-        <span class="brand-wordmark app-wordmark" aria-label="mantou 品牌">mantou</span>
+        <a href="./editor">手机编辑器 ↗</a>
+        <a href="https://mantou-blog.pages.dev/">回到博客 ↗</a>
         <button id="install-button" class="button button-ghost" type="button" hidden>安装到桌面</button>
       </div>
     </header>
+    <div class="app-intro">
+      <div>
+        <p class="eyebrow">长期主义 · 每日行动</p>
+        <h1>个人定投清单</h1>
+        <p class="intro-copy">每天三件事，留下一点向前的证据。</p>
+      </div>
+      <div class="intro-companion" aria-hidden="true">
+        <span>慢慢来，<br />也一直向前。</span>
+        <img src="./identity/mantou-p1-walk.svg" alt="" width="45" height="82" />
+      </div>
+    </div>
 
     <main class="workspace">
       <p id="data-notice" class="data-notice" role="status" aria-live="polite" hidden></p>
       <section class="editor-panel" aria-labelledby="editor-title">
         <div class="panel-heading">
           <div>
-            <p class="step-label">01</p>
-            <h2 id="editor-title">今日更新 · 3 个操作</h2>
+            <p class="step-label">01 · 今日行动</p>
+            <h2 id="editor-title">记录今天</h2>
           </div>
           <span id="save-status" class="save-status" role="status" aria-live="polite">已自动保存</span>
         </div>
@@ -46,7 +57,7 @@
                 </div>
                 <output id="reading-minutes-value" class="reading-value" for="reading-minutes">0 分钟</output>
               </div>
-              <input id="reading-minutes" class="reading-range" name="readingMinutes" type="range" min="0" max="180" step="5" value="0" aria-describedby="reading-target" />
+              <input id="reading-minutes" class="reading-range" name="readingMinutes" aria-label="破界行动分钟" type="range" min="0" max="180" step="5" value="0" aria-describedby="reading-target" />
               <div class="reading-marks" aria-hidden="true">
                 <span>0</span><span>30</span><span>60</span><span class="target-mark">90</span><span>120</span><span>150</span><span>180</span>
               </div>
@@ -66,7 +77,7 @@
                 <strong>今日已写日记</strong>
                 <small>只公开完成状态，不公开原文</small>
               </span>
-              <input id="diary-done" name="diaryDone" type="checkbox" />
+              <input id="diary-done" name="diaryDone" type="checkbox" role="switch" />
             </label>
           </fieldset>
 
@@ -155,26 +166,27 @@
         <div class="editor-actions">
           <button id="download-button" class="button button-primary" type="button">生成并下载 PNG</button>
         </div>
-        <p class="privacy-note">日常只需改 3 个字段；所有内容默认仅保存在当前浏览器。</p>
+        <p class="privacy-note">自动汇总本周进度 · 数据仅保存在当前浏览器</p>
       </section>
 
       <section class="preview-panel" aria-labelledby="preview-title">
         <div class="panel-heading">
           <div>
-            <p class="step-label">02</p>
-            <h2 id="preview-title">公开图片预览</h2>
+            <p class="step-label">02 · 留下一张记录</p>
+            <h2 id="preview-title">行动档案</h2>
           </div>
-          <span>松柏档案 · 1080 × 1536 PNG</span>
+          <span>1080 × 1536 PNG</span>
         </div>
 
         <div class="single-preview">
-          <img id="preview-forest" alt="松柏档案实时预览" />
+          <img id="preview-forest" alt="行动档案实时预览" />
         </div>
       </section>
     </main>
+    <footer class="app-footer">把时间转化为能力、资本与自主权。</footer>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=25"></script>
+    <script type="module" src="./app.js?v=26"></script>
     <script type="module" src="./backup.js"></script>
   </body>
 </html>
