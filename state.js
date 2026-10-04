@@ -47,7 +47,7 @@ export function sanitizeWeekLog(value, weekKey) {
     }]));
 }
 
-function validateState(state) {
+function validateState(state, { migrateLegacyDiaryTotal = false } = {}) {
   if (!isObject(state) || !isISODate(state.date) || !Number.isSafeInteger(state.diaryDay) || state.diaryDay < 0) {
     throw new Error("日期或累计日记天数无效");
   }
@@ -83,19 +83,40 @@ function validateState(state) {
     ? Object.values(state.weekLog).filter((daily) => daily.diaryDone).length
       + Number(!Object.hasOwn(state.weekLog, state.date) && state.diaryDone === true)
     : Number(state.diaryDone === true);
-  if (state.diaryDay < completed) throw new Error("累计日记少于已完成的日记记录");
-  return structuredClone(state);
+  if (state.diaryDay < completed && !migrateLegacyDiaryTotal) {
+    throw new Error("累计日记少于已完成的日记记录");
+  }
+  const validated = structuredClone(state);
+  // The pre-reliability UI allowed manually setting totals below checked days.
+  // Only local-state loading may repair this known legacy invariant. All other
+  // validation above still applies, and backup imports remain strict.
+  if (migrateLegacyDiaryTotal) validated.diaryDay = Math.max(validated.diaryDay, completed);
+  return validated;
 }
 
-export function parseBackup(payload) {
+function unwrapState(payload) {
   if (!isObject(payload)) throw new Error("备份必须是 JSON 对象");
   if ("state" in payload || "format" in payload || "version" in payload) {
     if (payload.format !== BACKUP_FORMAT || ![1, 2].includes(payload.version)) {
       throw new Error("不支持的备份格式或版本");
     }
-    return validateState(payload.state);
+    return payload.state;
   }
-  return validateState(payload);
+  return payload;
+}
+
+export function parseBackup(payload) {
+  return validateState(unwrapState(payload));
+}
+
+export function parseLocalState(payload) {
+  const original = unwrapState(payload);
+  const state = validateState(original, { migrateLegacyDiaryTotal: true });
+  return {
+    state,
+    diaryTotalCorrection: state.diaryDay === original.diaryDay
+      ? null : { from: original.diaryDay, to: state.diaryDay }
+  };
 }
 
 export function makeBackup(state) {

@@ -443,6 +443,49 @@ try {
     });
   }
 
+  await test("legacy local totals migrate without hiding data or weakening import validation", async ({ open }) => {
+    const page = await open();
+    const legacy = await snapshot(page);
+    legacy.diaryDay = 0;
+    legacy.diaryDone = true;
+    legacy.readingMinutes = 55;
+    legacy.investmentPhase = "Existing personal phase";
+    legacy.weekLog = {
+      [TODAY]: { readingMinutes: 55, trainingStatus: legacy.trainingStatus, diaryDone: true },
+      "2026-10-06": { readingMinutes: 35, trainingStatus: "恢复", diaryDone: true }
+    };
+    const raw = JSON.stringify(legacy);
+    await page.evaluate(({ key, raw }) => localStorage.setItem(key, raw), { key: STORAGE_KEY, raw });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => window.checklistStorage?.snapshot);
+    const migrated = await snapshot(page);
+    assert.deepEqual(migrated, { ...legacy, diaryDay: 2 });
+    assert.equal(await storage(page), raw, "Read-time migration must not overwrite the source value");
+    assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "preview");
+    assert.equal(await page.locator("#data-notice").isVisible(), true, "Migration notice must be visible in the default preview view");
+    assert.match(await page.locator("#data-notice").textContent(), /从 0 校正为 2/);
+    await downloadPNG(page);
+    assert.equal(await page.locator("#data-notice").isVisible(), true, "Saving from preview must not erase the correction notice");
+    await page.locator('[data-editor-view="form"]').click();
+    const closedSections = page.locator("details:not([open]) > summary");
+    while (await closedSections.count()) await closedSections.first().click();
+    assert.equal(await page.locator("#reading-minutes-value").textContent(), "55 分钟");
+    assert.deepEqual((await exportedBackup(page)).state, migrated);
+    assert.equal(await importBackup(page, envelope(legacy)), 0, "Backup import remains strict");
+    await reading(page, 65);
+    await flush(page);
+    const saved = await snapshot(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => window.checklistStorage?.snapshot);
+    assert.deepEqual(await snapshot(page), saved);
+    await page.locator('[data-editor-view="form"]').click();
+    while (await closedSections.count()) await closedSections.first().click();
+    const replacement = { ...saved, diaryDay: 200 };
+    assert.equal(await importBackup(page, envelope(replacement)), 1, "Migrated local data must not block restore");
+    assert.equal((await snapshot(page)).diaryDay, 200);
+    assert.deepEqual(JSON.parse(await storage(page, RECOVERY_KEY)).state, saved);
+  });
+
   await test("a stale second tab cannot overwrite newer work and can still export its input", async ({ open }) => {
     const first = await open();
     await reading(first, 20);

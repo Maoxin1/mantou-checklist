@@ -746,3 +746,15 @@ select:focus {
   white-space: nowrap !important;
 }
 
+
+.data-notice {
+  grid-column: 1 / -1;
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--green-soft);
+  color: var(--green-dark);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
