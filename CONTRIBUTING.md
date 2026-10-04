@@ -19,7 +19,9 @@
 npm install
 npm run serve
 npm run check
-npm run smoke
+npm test
+npm run test:browser
+npm run smoke:local
 npm run build
 ```
 
@@ -35,3 +37,4 @@ npm run build
 - 渐进增强：断网时核心填写、预览、备份和下载仍可使用
 
 涉及存储格式、Service Worker 或备份文件的改动，请说明向后兼容方式，并补充相应测试。
+

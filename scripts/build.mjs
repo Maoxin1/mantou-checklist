@@ -16,6 +16,8 @@ const files = [
   "styles.css",
   "editor.css",
   "app.js",
+  "state.js",
+  "backup.js",
   "editor.js",
   "sw.js",
   "config.json",
@@ -30,3 +32,4 @@ for (const file of files) {
 await cp(path.join(projectDir, "icons"), path.join(outputDir, "icons"), { recursive: true });
 
 console.log(`Built ${files.length} files and icons into ${outputDir}`);
+

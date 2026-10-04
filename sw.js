@@ -1,13 +1,15 @@
-const CACHE_NAME = "personal-investment-checklist-v25";
+const CACHE_NAME = "personal-investment-checklist-v26";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./editor",
-  "./styles.css?v=17",
-  "./editor.css?v=17",
-  "./app.js?v=23",
-  "./editor.js?v=18",
+  "./styles.css?v=18",
+  "./editor.css?v=18",
+  "./app.js?v=24",
+  "./editor.js?v=19",
   "./config.json",
+  "./state.js",
+  "./backup.js",
   "./manifest.webmanifest",
   "./editor.webmanifest",
   "./icons/icon-192.png",
@@ -58,3 +60,4 @@ async function networkFirst(request) {
     throw new Error(`Offline resource unavailable: ${request.url}`);
   }
 }
+

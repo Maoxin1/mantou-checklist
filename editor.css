@@ -159,7 +159,9 @@
 .mobile-section-heading .save-status {
   color: var(--muted);
   font-size: 0.76rem;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 62%;
+  text-align: right;
 }
 
 .mobile-editor-page form {
@@ -219,38 +221,6 @@
   min-height: 48px;
   margin-top: 0.6rem;
   text-align: left;
-}
-
-.backup-description {
-  margin: 0.55rem 0 0.8rem;
-  color: var(--muted);
-  font-size: 0.78rem;
-  line-height: 1.55;
-}
-
-.backup-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-}
-
-.backup-button {
-  border-color: rgba(31, 107, 67, 0.22);
-  background: var(--green-soft);
-  color: var(--green-dark);
-}
-
-.visually-hidden {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  min-height: 0 !important;
-  margin: -1px !important;
-  padding: 0 !important;
-  overflow: hidden !important;
-  clip: rect(0 0 0 0) !important;
-  border: 0 !important;
-  white-space: nowrap !important;
 }
 
 .mobile-preview-view .single-preview {
@@ -344,3 +314,4 @@
   margin-top: 0.35rem;
   font-size: 0.74rem;
 }
+

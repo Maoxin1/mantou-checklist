@@ -34,9 +34,19 @@ jobs:
       - name: Check JavaScript syntax
         run: npm run check
 
+      - name: Test state and backup invariants
+        run: npm test
+
       - name: Build production site
         run: npm run build
 
+      - name: Test browser data reliability
+        run: npm run test:browser
+
+      - name: Test offline app and backup smoke flows
+        run: npm run smoke:local
+
       - name: Audit high-severity dependencies
         run: npm audit --audit-level=high
+
 
