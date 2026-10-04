@@ -63,7 +63,10 @@ async function newContext({ time = BASE_TIME, fault } = {}) {
     await page.goto(`${server.url}${route}`, { waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => window.checklistStorage?.snapshot && document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
     if (route.startsWith("/editor")) await page.locator('[data-editor-view="form"]').click();
-    for (const summary of await page.locator("details:not([open]) > summary").all()) await summary.click();
+    // This selector shrinks after each click: always take the first remaining
+    // closed section instead of indexing a live locator list.
+    const closedSections = page.locator("details:not([open]) > summary");
+    while (await closedSections.count()) await closedSections.first().click();
     return page;
   }
   return {
