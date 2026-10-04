@@ -220,3 +220,65 @@ test("save uses the shared Web Lock and a lock failure retains unsaved work", as
   assert.equal(app.storage.get(key), original);
   assert.equal(app.eval("state.readingMinutes"), 85);
 });
+
+test("old UI's zero total and checked days stay visible and save/reload successfully", async () => {
+  const legacy = { ...base(), diaryDay: 0, investmentPhase: "Existing phase stays visible" };
+  const app = createApp(legacy);
+  assert.equal(app.eval("state.diaryDay"), 2);
+  assert.equal(app.eval("state.diaryDone"), true);
+  assert.equal(app.eval("state.readingMinutes"), 90);
+  assert.equal(app.eval("state.investmentPhase"), legacy.investmentPhase);
+  assert.deepEqual(JSON.parse(app.eval("JSON.stringify(state.weekLog)")), legacy.weekLog);
+  assert.equal(app.storage.get(key), JSON.stringify(legacy), "Loading must not overwrite the old local value");
+  assert.match(app.nodes.get("#save-status").textContent, /从 0 校正为 2/);
+  assert.equal(app.nodes.get("#data-notice").hidden, false);
+  assert.match(app.nodes.get("#data-notice").textContent, /从 0 校正为 2/);
+  assert.doesNotThrow(() => stateHelpers.parseBackup(stateHelpers.makeBackup(app.eval("getFormState()"))));
+  app.input("reading-minutes", 95);
+  assert.equal(await app.eval("saveState()"), true);
+  const persisted = JSON.parse(app.storage.get(key));
+  assert.equal(persisted.diaryDay, 2);
+  assert.equal(app.nodes.get("#data-notice").hidden, false, "Saving does not hide the correction notice");
+  const reloaded = createApp(persisted);
+  assert.equal(reloaded.eval("state.readingMinutes"), 95);
+  assert.equal(reloaded.eval("state.investmentPhase"), legacy.investmentPhase);
+  assert.equal(reloaded.eval("unreadableStorage"), false);
+  assert.equal(reloaded.eval("localDiaryTotalCorrection"), null);
+  assert.equal(reloaded.nodes.get("#data-notice").hidden, true);
+});
+
+test("legacy migration allows valid restore while inconsistent imports remain rejected", async () => {
+  const legacy = { ...base(), diaryDay: 0 };
+  const app = createApp(legacy);
+  const original = app.storage.get(key);
+  app.sandbox.legacy = legacy;
+  await assert.rejects(app.eval("restoreState(legacy)"), /累计日记/);
+  assert.equal(app.storage.get(key), original);
+  assert.equal(app.eval("state.diaryDay"), 2);
+  app.sandbox.valid = { ...base(), diaryDay: 200 };
+  await app.eval("restoreState(valid)");
+  assert.equal(app.eval("state.diaryDay"), 200);
+  assert.equal(JSON.parse(app.storage.get(stateHelpers.RECOVERY_KEY)).state.diaryDay, 2);
+});
+
+test("legacy correction survives rollover and clean-tab synchronization", async () => {
+  const older = { date: "2026-09-27", diaryDay: 0, diaryDone: true, readingMinutes: 90, trainingStatus: "力量训练", weekKey: "2026-09-21", weekLog: {
+    "2026-09-24": { readingMinutes: 30, trainingStatus: "激活", diaryDone: true },
+    "2026-09-27": { readingMinutes: 90, trainingStatus: "力量训练", diaryDone: true }
+  }, investmentPhase: "Existing prior-week phase" };
+  const app = createApp(older);
+  assert.equal(app.eval("state.diaryDay"), 2);
+  assert.equal(app.eval("state.investmentPhase"), older.investmentPhase);
+  assert.equal(app.eval("state.date"), "2026-10-04");
+  assert.equal(app.eval("state.weekKey"), "2026-09-28");
+  assert.equal(await app.eval("saveState()"), true);
+  const currentLegacy = { ...base(), diaryDay: 0 };
+  app.storage.set(key, JSON.stringify(currentLegacy));
+  app.sandbox.window.listeners.storage({ key, newValue: JSON.stringify(currentLegacy) });
+  assert.equal(app.eval("state.diaryDay"), 2);
+  assert.equal(app.eval("state.readingMinutes"), 90);
+  assert.match(app.nodes.get("#save-status").textContent, /从 0 校正为 2/);
+  assert.equal(app.nodes.get("#data-notice").hidden, false);
+  assert.match(app.nodes.get("#data-notice").textContent, /从 0 校正为 2/);
+  assert.equal(await app.eval("saveState()"), true);
+});

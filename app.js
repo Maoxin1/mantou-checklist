@@ -1,4 +1,4 @@
-import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, makeBackup } from "./state.js";
+import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, parseLocalState, makeBackup } from "./state.js";
 
 const fallbackConfig = {
   diaryDay: 1291,
@@ -44,6 +44,7 @@ const elements = {
   download: document.querySelector("#download-button"),
   install: document.querySelector("#install-button"),
   saveStatus: document.querySelector("#save-status"),
+  dataNotice: document.querySelector("#data-notice"),
   toast: document.querySelector("#toast"),
   previewForest: document.querySelector("#preview-forest")
 };
@@ -57,6 +58,7 @@ let baselineRaw = null;
 let dirty = false;
 let conflict = false;
 let unreadableStorage = false;
+let localDiaryTotalCorrection = null;
 let calendarTimer = null;
 let pendingWrite = Promise.resolve();
 
@@ -214,7 +216,7 @@ function bindEvents() {
         observedToday = toLocalISODate(new Date());
         fillForm(state);
         render(true);
-        elements.saveStatus.textContent = "已同步另一窗口的数据";
+        if (!localDiaryTotalCorrection) elements.saveStatus.textContent = "已同步另一窗口的数据";
       }
     }
   });
@@ -379,12 +381,22 @@ function saveState() {
   return pendingWrite;
 }
 
+function showDiaryTotalCorrection(correction) {
+  localDiaryTotalCorrection = correction;
+  const message = correction
+    ? `旧清单已载入；累计日记按完成记录从 ${correction.from} 校正为 ${correction.to}` : "";
+  elements.dataNotice.hidden = !correction;
+  elements.dataNotice.textContent = message;
+  if (correction) elements.saveStatus.textContent = message;
+}
+
 function loadState() {
   try {
     baselineRaw = localStorage.getItem(STORAGE_KEY);
-    const saved = baselineRaw ? parseBackup(JSON.parse(baselineRaw)) : null;
+    const loaded = baselineRaw ? parseLocalState(JSON.parse(baselineRaw)) : null;
     unreadableStorage = false;
-    return saved;
+    showDiaryTotalCorrection(loaded?.diaryTotalCorrection || null);
+    return loaded?.state || null;
   } catch {
     unreadableStorage = true;
     showSaveProblem("本机数据无法读取；未覆盖原数据，仍可填写和导出");
@@ -417,6 +429,7 @@ async function restoreState(candidate) {
     state = restored;
     observedToday = toLocalISODate(new Date());
     dirty = false;
+    showDiaryTotalCorrection(null);
     fillForm(state);
     render(true);
     scheduleCalendarCheck();

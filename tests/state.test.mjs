@@ -45,3 +45,33 @@ test("backup metadata, field types, diary bounds, and every logged date are chec
   ];
   for (const value of invalid) assert.throws(() => parseBackup(value), JSON.stringify(value));
 });
+
+test("local legacy diary totals migrate narrowly without loosening backup validation", async () => {
+  const { parseLocalState } = await import("../state.js");
+  const legacy = current();
+  legacy.diaryDay = 0;
+  legacy.weekLog["2026-10-01"] = { readingMinutes: 30, trainingStatus: "激活", diaryDone: true };
+  legacy.investmentPhase = "Keep the existing phase";
+  const original = structuredClone(legacy);
+  const loaded = parseLocalState(legacy);
+  assert.deepEqual(loaded.diaryTotalCorrection, { from: 0, to: 2 });
+  assert.deepEqual(loaded.state, { ...original, diaryDay: 2 });
+  assert.deepEqual(legacy, original, "Migration must not mutate the source object");
+  assert.throws(() => parseBackup(legacy), /累计日记/);
+  assert.throws(() => parseBackup(makeBackup(legacy)), /累计日记/);
+  assert.deepEqual(parseBackup(makeBackup(loaded.state)), loaded.state);
+  assert.equal(parseLocalState(loaded.state).diaryTotalCorrection, null);
+});
+
+test("local migration counts top-level-only days but rejects every other corruption", async () => {
+  const { parseLocalState } = await import("../state.js");
+  const legacy = { date: "2026-10-04", diaryDay: 0, diaryDone: true };
+  assert.deepEqual(parseLocalState(legacy).state, { ...legacy, diaryDay: 1 });
+  for (const corrupted of [
+    { ...legacy, date: "2026-02-30" }, { ...legacy, diaryDay: "0" },
+    { ...legacy, diaryDay: -1 }, { ...legacy, diaryDone: "true" },
+    { ...legacy, weekKey: "2026-09-28", weekLog: { "2026-10-05": record } },
+    { ...current(), diaryDay: 0, readingMinutes: 25 },
+    { ...makeBackup(legacy), version: 99 }
+  ]) assert.throws(() => parseLocalState(corrupted), JSON.stringify(corrupted));
+});
