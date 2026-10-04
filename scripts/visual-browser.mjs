@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright-core";
 import { findChromeExecutable } from "./browser-path.mjs";
@@ -31,8 +31,24 @@ async function assertFits(page, label) {
   assert.ok(result.scroll <= result.client + 1, `${label} horizontal overflow: ${JSON.stringify(result)}`);
   report.push({ check: label, ...result });
 }
+async function assertPNG(filename) {
+  const bytes = await readFile(filename);
+  assert.ok(bytes.length > 10_000, "PNG should contain a rendered poster");
+  assert.equal(bytes.subarray(0, 8).toString("hex"), "89504e470d0a1a0a");
+  assert.equal(bytes.subarray(12, 16).toString("ascii"), "IHDR");
+  assert.equal(bytes.readUInt32BE(16), 1080);
+  assert.equal(bytes.readUInt32BE(20), 1536);
+}
+async function assertExpandedFits(page, label) {
+  const summaries = page.locator("details:not([open]) > summary");
+  while (await summaries.count()) await summaries.first().click();
+  await assertFits(page, label);
+  const overflow = await page.locator("#checklist-form input:not([type=file]), #checklist-form select, #checklist-form button, #checklist-form summary").evaluateAll((nodes) => nodes.map((node) => ({ id: node.id, x: node.getBoundingClientRect().x, right: node.getBoundingClientRect().right })).filter((node) => node.x < -1 || node.right > innerWidth + 1));
+  assert.deepEqual(overflow, [], label);
+  await screenshot(page, label.replaceAll(" ", "-"));
+}
 async function open(route, width, height = 844) {
-  const context = await browser.newContext({ viewport: { width, height }, timezoneId: "Asia/Shanghai", reducedMotion: "reduce", serviceWorkers: "block", acceptDownloads: true });
+  const context = await browser.newContext({ viewport: { width, height }, hasTouch: route === "/editor", isMobile: route === "/editor", timezoneId: "Asia/Shanghai", reducedMotion: "reduce", serviceWorkers: "block", acceptDownloads: true });
   const errors = [];
   context.on("page", (page) => page.on("pageerror", (error) => errors.push(error.message)));
   await context.route("**/*", (route) => {
@@ -58,6 +74,18 @@ try {
   const { page } = mobile;
   assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "form");
   assert.equal(await page.getByRole("tab", { selected: true }).getAttribute("id"), "tab-form");
+  await page.locator("#tab-preview").tap();
+  assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "preview");
+  await page.locator("#tab-form").tap();
+  const touchDiaryBefore = await page.evaluate(() => window.checklistStorage.snapshot().diaryDay);
+  await page.getByRole("switch").tap();
+  assert.equal(await page.evaluate(() => window.checklistStorage.snapshot().diaryDone), true);
+  await page.getByRole("switch").tap();
+  assert.equal(await page.evaluate(() => window.checklistStorage.snapshot().diaryDay), touchDiaryBefore);
+  const track = await page.locator("#reading-minutes").boundingBox();
+  await page.touchscreen.tap(track.x + track.width * .3, track.y + track.height / 2);
+  assert.ok(await page.evaluate(() => window.checklistStorage.snapshot().readingMinutes > 0));
+  report.push({ check: "emulated touchscreen tab, diary toggle and slider tap", passed: true });
   await page.locator("#tab-form").focus();
   await page.keyboard.press("ArrowRight");
   assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "preview");
@@ -99,16 +127,20 @@ try {
   await page.locator("#download-button").click();
   const download = await downloadEvent;
   await download.saveAs(path.join(output, "poster-browser-export.png"));
+  await assertPNG(path.join(output, "poster-browser-export.png"));
   assert.match(download.suggestedFilename(), /\.png$/);
   const png = await page.locator("#preview-forest").evaluate((image) => ({ width: image.naturalWidth, height: image.naturalHeight }));
   assert.deepEqual(png, { width: 1080, height: 1536 });
   assert.deepEqual(mobile.errors, []);
   report.push({ check: "mobile keyboard, repeated tabs, >=48px touch targets, live PNG download", passed: true, targets, png });
+  await page.locator("#tab-form").click();
+  await assertExpandedFits(page, "mobile-390-expanded");
   await mobile.context.close();
 
   for (const width of [320, 760]) {
     const phone = await open("/editor", width);
     await screenshot(phone.page, `mobile-${width}-form`);
+    await assertExpandedFits(phone.page, `mobile-${width}-expanded`);
     await phone.page.locator("#tab-preview").click();
     await assertFits(phone.page, `/editor preview ${width}px`);
     await screenshot(phone.page, `mobile-${width}-preview`);
@@ -118,6 +150,7 @@ try {
   for (const width of [320, 760, 1280]) {
     const desktop = await open("/", width, 1000);
     await screenshot(desktop.page, `desktop-${width}`);
+    if (width < 1280) await assertExpandedFits(desktop.page, `desktop-${width}-expanded`);
     if (width === 1280) {
       await desktop.page.getByText("阶段与成果设置", { exact: true }).click();
       await desktop.page.locator("#body-phase").fill("长期阅读与实践的阶段性成果验证");
@@ -127,6 +160,7 @@ try {
       await desktop.page.waitForTimeout(400);
       const dataUrl = await desktop.page.evaluate(() => window.checklistExporter.toDataUrl());
       await writeFile(path.join(output, "poster-long-text-three-results.png"), Buffer.from(dataUrl.split(",")[1], "base64"));
+      await assertPNG(path.join(output, "poster-long-text-three-results.png"));
       await assertFits(desktop.page, "expanded desktop form with long text");
     }
     assert.deepEqual(desktop.errors, []);
