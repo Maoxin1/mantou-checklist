@@ -8,7 +8,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=17" />
+    <link rel="stylesheet" href="./styles.css?v=18" />
     <title>个人定投清单生成器</title>
   </head>
   <body>
@@ -31,7 +31,7 @@
             <p class="step-label">01</p>
             <h2 id="editor-title">今日更新 · 3 个操作</h2>
           </div>
-          <span id="save-status" class="save-status">已自动保存</span>
+          <span id="save-status" class="save-status" role="status" aria-live="polite">已自动保存</span>
         </div>
 
         <form id="checklist-form" autocomplete="off">
@@ -72,7 +72,7 @@
           <details>
             <summary>阶段与成果设置</summary>
             <label>
-              <span>发布日期</span>
+              <span>记录与发布日期（仅本周）</span>
               <input id="date" name="date" type="date" />
             </label>
             <label>
@@ -138,6 +138,17 @@
               <input id="motto" name="motto" type="text" maxlength="36" />
             </label>
           </details>
+
+          <details>
+            <summary>本地数据管理</summary>
+            <p class="backup-description">备份文件只包含这张清单的本地状态，用于清理浏览器数据或更换设备前手动恢复。</p>
+            <div class="backup-actions">
+              <button id="export-backup" class="button backup-button" type="button">导出备份</button>
+              <button id="import-backup" class="button backup-button" type="button">导入恢复</button>
+              <button id="export-recovery" class="button backup-button" type="button">下载导入前备份</button>
+            </div>
+            <input id="backup-file" class="visually-hidden" type="file" accept="application/json,.json" />
+          </details>
         </form>
 
         <div class="editor-actions">
@@ -162,6 +173,8 @@
     </main>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=23"></script>
+    <script type="module" src="./app.js?v=24"></script>
+    <script type="module" src="./backup.js"></script>
   </body>
 </html>
+

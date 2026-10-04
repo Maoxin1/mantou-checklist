@@ -22,15 +22,21 @@
   ],
   "scripts": {
     "serve": "npm run build && wrangler pages dev dist --port 4173",
-    "check": "node --check app.js && node --check editor.js && node --check sw.js",
+    "check": "node --check app.js && node --check state.js && node --check backup.js && node --check editor.js && node --check sw.js && node --check scripts/reliability-browser.mjs && node --check scripts/test-server.mjs && node --check scripts/run-smoke.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "screenshots": "node scripts/capture-docs.mjs",
     "build": "node scripts/build.mjs",
     "smoke": "node scripts/smoke.mjs",
-    "deploy": "npm run check && npm run build && wrangler pages deploy dist --project-name=mantou-checklist --branch=main"
+    "deploy": "npm run check && npm run build && wrangler pages deploy dist --project-name=mantou-checklist --branch=main",
+    "test": "node --test tests/*.test.mjs",
+    "test:browser": "npm run build && node scripts/reliability-browser.mjs",
+    "smoke:local": "npm run build && node scripts/run-smoke.mjs"
   },
   "devDependencies": {
     "playwright-core": "^1.63.0",
-    "wrangler": "^4.131.1"
+    "wrangler": "4.147.0"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

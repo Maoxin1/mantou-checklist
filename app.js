@@ -1,4 +1,4 @@
-const STORAGE_KEY = "personal-investment-checklist:v1";
+import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, makeBackup } from "./state.js";
 
 const fallbackConfig = {
   diaryDay: 1291,
@@ -51,31 +51,25 @@ const elements = {
 let installPrompt = null;
 let saveTimer = null;
 let previewTimer = null;
-let lastDiaryDone = false;
-let activeDiaryDate = "";
-let activeWeekKey = "";
-let weeklyLog = {};
+let state;
+let observedToday = toLocalISODate(new Date());
+let baselineRaw = null;
+let dirty = false;
+let conflict = false;
+let unreadableStorage = false;
+let calendarTimer = null;
+let pendingWrite = Promise.resolve();
 
 window.checklistExporter = { toDataUrl: createPosterDataUrl };
 window.checklistStorage = {
   key: STORAGE_KEY,
-  save() {
-    saveState();
-    return getFormState();
-  },
-  restore(state) {
-    clearTimeout(saveTimer);
-    clearTimeout(previewTimer);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    const restored = buildInitialState(state, toLocalISODate(new Date()));
-    weeklyLog = { ...restored.weekLog };
-    activeWeekKey = restored.weekKey;
-    fillForm(restored);
-    lastDiaryDone = restored.diaryDone;
-    activeDiaryDate = restored.date;
-    render(true);
-    saveState();
-    return restored;
+  recoveryKey: RECOVERY_KEY,
+  snapshot: getFormState,
+  save: saveState,
+  restore: restoreState,
+  recovery() {
+    try { return JSON.parse(localStorage.getItem(RECOVERY_KEY) || "null"); }
+    catch { return null; }
   }
 };
 
@@ -92,22 +86,25 @@ async function loadConfig() {
 }
 
 function initialize() {
-  const today = toLocalISODate(new Date());
   const saved = loadState();
-  const state = buildInitialState(saved, today);
-  weeklyLog = { ...state.weekLog };
-  activeWeekKey = state.weekKey;
+  state = buildInitialState(saved, observedToday);
   fillForm(state);
-  lastDiaryDone = state.diaryDone;
-  activeDiaryDate = state.date;
   render(true);
   bindEvents();
+  scheduleCalendarCheck();
   registerServiceWorker();
 }
 
 function buildInitialState(saved, today) {
   const currentWeek = getWeekKey(today);
-  const weekLog = saved?.weekKey === currentWeek ? sanitizeWeekLog(saved?.weekLog) : {};
+  const weekLog = saved?.weekKey === currentWeek ? sanitizeWeekLog(saved?.weekLog, currentWeek) : {};
+  if (isISODate(saved?.date) && getWeekKey(saved.date) === currentWeek && !weekLog[saved.date]) {
+    weekLog[saved.date] = {
+      readingMinutes: normalizeReadingMinutes(saved.readingMinutes),
+      trainingStatus: normalizeTrainingStatus(saved.trainingStatus),
+      diaryDone: saved.diaryDone === true
+    };
+  }
   const daily = weekLog[today] || {};
   const sameDay = saved?.date === today;
 
@@ -123,7 +120,7 @@ function buildInitialState(saved, today) {
     trainingStatus: sameDay && saved?.trainingStatus
       ? normalizeTrainingStatus(saved.trainingStatus)
       : normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus),
-    diaryDone: sameDay ? Boolean(saved?.diaryDone) : Boolean(daily.diaryDone),
+    diaryDone: sameDay && saved?.diaryDone !== undefined ? saved.diaryDone : Boolean(daily.diaryDone),
     diaryDay: Math.max(0, Number(saved?.diaryDay ?? config.diaryDay) || 0),
     weekKey: currentWeek,
     weekLog,
@@ -139,34 +136,87 @@ function buildInitialState(saved, today) {
 
 function bindEvents() {
   elements.form.addEventListener("input", (event) => {
-    if (event.target === elements.readingMinutes) syncReadingSlider();
+    const target = event.target;
+    if (target === elements.date) return; // Date transitions have their own commit.
+    const value = target.type === "checkbox" ? target.checked : target.value;
+    if (refreshCalendar()) {
+      if (target.type === "checkbox") target.checked = value;
+      else target.value = value;
+    }
+    const field = target.name;
+    if (!(field in state) || field === "weekLog" || field === "weekKey") return;
+    if (field === "diaryDone") {
+      if (value && !state.diaryDone && state.diaryDay === Number.MAX_SAFE_INTEGER) {
+        elements.diaryDone.checked = false;
+        showToast("累计日记天数已达上限，请先校正累计天数");
+        return;
+      }
+      state.diaryDay = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, state.diaryDay + Number(value) - Number(state.diaryDone)));
+    }
+    state[field] = field === "readingMinutes" ? normalizeReadingMinutes(value)
+      : field === "diaryDay" ? Math.min(Number.MAX_SAFE_INTEGER, Math.max(completedDiaryDays(), Math.trunc(Number(value) || 0)))
+      : typeof value === "string" ? value.trim() : value;
+    recordCurrentDay();
+    dirty = true;
+    // Do not rewrite text inputs on every keystroke (caret/IME composition).
+    elements.diaryDay.value = state.diaryDay;
+    elements.diaryDone.checked = state.diaryDone;
+    syncReadingSlider(state.readingMinutes);
     render();
     queueSave();
   });
 
   elements.date.addEventListener("change", () => {
-    const nextDate = elements.date.value || toLocalISODate(new Date());
-    const nextWeek = getWeekKey(nextDate);
-    if (nextWeek !== activeWeekKey) {
-      weeklyLog = {};
-      activeWeekKey = nextWeek;
+    const nextDate = elements.date.value;
+    refreshCalendar();
+    if (!isISODate(nextDate) || getWeekKey(nextDate) !== getWeekKey(observedToday)) {
+      elements.date.value = state.date;
+      showToast("只支持查看和补记本周日期，已有记录未改变");
+      return;
     }
-    const daily = weeklyLog[nextDate] || {};
-    elements.readingMinutes.value = normalizeReadingMinutes(daily.readingMinutes);
-    elements.trainingStatus.value = normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus);
-    elements.diaryDone.checked = Boolean(daily.diaryDone);
-    lastDiaryDone = elements.diaryDone.checked;
-    activeDiaryDate = nextDate;
+    selectDate(nextDate);
+    dirty = true;
     render();
-    saveState();
+    void saveState();
   });
 
-  elements.diaryDone.addEventListener("change", updateDiaryTotal);
   elements.phaseDefaults.addEventListener("click", () => {
+    refreshCalendar();
     applyPhaseDefaults();
+    dirty = true;
     render();
-    saveState();
+    void saveState();
     showToast("已恢复当前阶段默认值");
+  });
+  elements.form.addEventListener("focusin", refreshCalendar);
+  window.addEventListener("focus", refreshCalendar);
+  window.addEventListener("pageshow", refreshCalendar);
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refreshCalendar();
+    else if (dirty) void saveState();
+  });
+  window.addEventListener("pagehide", () => { if (dirty) void saveState(); });
+  window.addEventListener("beforeunload", (event) => {
+    if (!dirty) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+  window.addEventListener("storage", (event) => {
+    if (event.key !== STORAGE_KEY && event.key !== null) return;
+    if (event.key === STORAGE_KEY && event.newValue === baselineRaw) return;
+    if (dirty || conflict) {
+      conflict = true;
+      showSaveProblem("另一窗口已更新；请导出本页备份后刷新");
+    } else {
+      const saved = loadState();
+      if (!unreadableStorage) {
+        state = buildInitialState(saved, toLocalISODate(new Date()));
+        observedToday = toLocalISODate(new Date());
+        fillForm(state);
+        render(true);
+        elements.saveStatus.textContent = "已同步另一窗口的数据";
+      }
+    }
   });
   elements.download.addEventListener("click", downloadPoster);
   elements.install.addEventListener("click", installApp);
@@ -190,12 +240,13 @@ function bindEvents() {
 
 function fillForm(state) {
   elements.date.value = state.date;
+  elements.date.min = getWeekKey(observedToday);
+  elements.date.max = weekEnd(elements.date.min);
   elements.bodyPhase.value = state.bodyPhase;
   elements.bodyMeta.value = state.bodyMeta;
   elements.investmentPhase.value = state.investmentPhase;
   elements.readingPhase.value = state.readingPhase;
-  elements.readingMinutes.value = normalizeReadingMinutes(state.readingMinutes);
-  syncReadingSlider();
+  syncReadingSlider(state.readingMinutes);
   elements.trainingStatus.value = state.trainingStatus;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
@@ -210,6 +261,8 @@ function fillForm(state) {
 
 function syncReadingSlider(value = elements.readingMinutes.value) {
   const minutes = normalizeReadingMinutes(value);
+  elements.readingMinutes.max = minutes > 180 ? "360" : "180";
+  elements.readingMinutes.step = minutes % 5 === 0 ? "5" : "1";
   const min = Number(elements.readingMinutes.min) || 0;
   const max = Number(elements.readingMinutes.max) || 180;
   const progress = max > min ? ((minutes - min) / (max - min)) * 100 : 0;
@@ -233,78 +286,156 @@ function renderPreviews() {
 }
 
 function getFormState() {
-  const date = elements.date.value || toLocalISODate(new Date());
-  const weekKey = getWeekKey(date);
-  if (weekKey !== activeWeekKey) {
-    weeklyLog = {};
-    activeWeekKey = weekKey;
-  }
+  // Rendering and exporting must never edit logs, dates, or diary totals.
+  return structuredClone(state);
+}
 
-  const readingMinutes = normalizeReadingMinutes(elements.readingMinutes.value);
-  const trainingStatus = normalizeTrainingStatus(elements.trainingStatus.value);
-  const diaryDone = elements.diaryDone.checked;
+function completedDiaryDays() {
+  return Object.values(state.weekLog).filter((daily) => daily.diaryDone).length;
+}
 
-  weeklyLog[date] = { readingMinutes, trainingStatus, diaryDone };
-
-  return {
-    date,
-    bodyPhase: elements.bodyPhase.value.trim(),
-    bodyMeta: elements.bodyMeta.value.trim(),
-    investmentPhase: elements.investmentPhase.value.trim(),
-    readingPhase: elements.readingPhase.value.trim(),
-    readingMinutes,
-    trainingStatus,
-    diaryDone,
-    diaryDay: Math.max(0, Number(elements.diaryDay.value) || 0),
-    weekKey,
-    weekLog: { ...weeklyLog },
-    nextResult: elements.nextResult.value.trim(),
-    nextResultDate: elements.nextResultDate.value.trim(),
-    nextResult2: elements.nextResult2.value.trim(),
-    nextResultDate2: elements.nextResultDate2.value.trim(),
-    nextResult3: elements.nextResult3.value.trim(),
-    nextResultDate3: elements.nextResultDate3.value.trim(),
-    motto: elements.motto.value.trim()
+function recordCurrentDay() {
+  state.weekLog[state.date] = {
+    readingMinutes: state.readingMinutes,
+    trainingStatus: state.trainingStatus,
+    diaryDone: state.diaryDone
   };
 }
 
-function updateDiaryTotal() {
-  const current = Math.max(0, Number(elements.diaryDay.value) || 0);
-  if (elements.diaryDone.checked && !lastDiaryDone) elements.diaryDay.value = current + 1;
-  if (!elements.diaryDone.checked && lastDiaryDone) elements.diaryDay.value = Math.max(0, current - 1);
-  lastDiaryDone = elements.diaryDone.checked;
-  render();
-  saveState();
+function selectDate(date) {
+  const daily = state.weekLog[date] || {};
+  state.date = date;
+  state.readingMinutes = normalizeReadingMinutes(daily.readingMinutes);
+  state.trainingStatus = normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus);
+  state.diaryDone = daily.diaryDone === true;
+  fillForm(state);
+}
+
+function scheduleCalendarCheck() {
+  clearTimeout(calendarTimer);
+  const next = new Date();
+  next.setHours(24, 0, 0, 30);
+  calendarTimer = setTimeout(refreshCalendar, Math.max(1, next.getTime() - Date.now()));
+}
+
+function refreshCalendar() {
+  const today = toLocalISODate(new Date());
+  if (today === observedToday) return false;
+  const selected = state.date;
+  const followToday = selected === observedToday || getWeekKey(selected) !== getWeekKey(today);
+  state = buildInitialState(state, today);
+  observedToday = today;
+  if (!followToday) selectDate(selected);
+  else fillForm(state);
+  dirty = true;
+  render(true);
+  queueSave();
+  scheduleCalendarCheck();
+  showToast("日期已更新；累计日记天数已保留");
+  return true;
+}
+
+function showSaveProblem(message) {
+  elements.saveStatus.textContent = message;
 }
 
 function queueSave() {
-  elements.saveStatus.textContent = "正在保存…";
+  if (!conflict && !unreadableStorage) elements.saveStatus.textContent = "正在保存…";
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(saveState, 280);
+  saveTimer = setTimeout(() => { void saveState(); }, 280);
+}
+
+function withStorageLock(callback) {
+  // Web Locks serializes the check-and-write across tabs, not just this page.
+  // Older browsers still get a synchronous latest-value guard.
+  return navigator.locks ? navigator.locks.request(STORAGE_KEY, callback) : Promise.resolve().then(callback);
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(getFormState()));
-  elements.saveStatus.textContent = "已自动保存";
+  clearTimeout(saveTimer);
+  pendingWrite = pendingWrite.catch(() => {}).then(() => withStorageLock(() => {
+    if (conflict || unreadableStorage) return false;
+    try {
+      const latest = localStorage.getItem(STORAGE_KEY);
+      if (latest !== baselineRaw) {
+        conflict = true;
+        showSaveProblem("另一窗口已更新；请导出本页备份后刷新");
+        return false;
+      }
+      const raw = JSON.stringify(getFormState());
+      localStorage.setItem(STORAGE_KEY, raw);
+      baselineRaw = raw;
+      dirty = false;
+      elements.saveStatus.textContent = "已自动保存";
+      return true;
+    } catch {
+      showSaveProblem("本机保存失败；请先导出备份，当前填写仍可下载");
+      return false;
+    }
+  })).catch(() => {
+    showSaveProblem("本机保存失败；请先导出备份，当前填写仍可下载");
+    return false;
+  });
+  return pendingWrite;
 }
 
 function loadState() {
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+    baselineRaw = localStorage.getItem(STORAGE_KEY);
+    const saved = baselineRaw ? parseBackup(JSON.parse(baselineRaw)) : null;
+    unreadableStorage = false;
+    return saved;
   } catch {
+    unreadableStorage = true;
+    showSaveProblem("本机数据无法读取；未覆盖原数据，仍可填写和导出");
     return null;
   }
 }
 
+async function restoreState(candidate) {
+  const validated = parseBackup(candidate);
+  clearTimeout(saveTimer);
+  await pendingWrite;
+  return withStorageLock(() => {
+    if (conflict || unreadableStorage || localStorage.getItem(STORAGE_KEY) !== baselineRaw) {
+      conflict = true;
+      showSaveProblem("另一窗口已更新或本机数据不可读；请先导出备份后刷新");
+      throw new Error("无法安全恢复，请先导出当前备份并刷新页面");
+    }
+    const restored = buildInitialState(validated, toLocalISODate(new Date()));
+    try {
+      // If either write fails, keep the current UI unchanged. The primary setItem
+      // is atomic; a successfully written recovery remains available on failure.
+      localStorage.setItem(RECOVERY_KEY, JSON.stringify(makeBackup(getFormState())));
+      const raw = JSON.stringify(restored);
+      localStorage.setItem(STORAGE_KEY, raw);
+      baselineRaw = raw;
+    } catch {
+      showSaveProblem("恢复未完成；原清单未覆盖，请检查本机存储空间");
+      throw new Error("无法保存导入前备份或新数据，未覆盖当前清单");
+    }
+    state = restored;
+    observedToday = toLocalISODate(new Date());
+    dirty = false;
+    fillForm(state);
+    render(true);
+    scheduleCalendarCheck();
+    elements.saveStatus.textContent = "备份已恢复，导入前备份已保留";
+    return getFormState();
+  });
+}
+
 function applyPhaseDefaults() {
-  elements.bodyPhase.value = config.bodyPhase;
-  elements.bodyMeta.value = config.bodyMeta;
-  elements.readingPhase.value = config.readingPhase;
+  state.bodyPhase = config.bodyPhase;
+  state.bodyMeta = config.bodyMeta;
+  state.readingPhase = config.readingPhase;
+  fillForm(state);
 }
 
 async function downloadPoster() {
+  refreshCalendar();
   render();
-  saveState();
+  void saveState();
   elements.download.disabled = true;
   elements.download.textContent = "正在生成…";
 
@@ -514,19 +645,6 @@ function getWeeklyStats(state) {
   };
 }
 
-function sanitizeWeekLog(value) {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
-  const result = {};
-  for (const [date, item] of Object.entries(value)) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !item || typeof item !== "object") continue;
-    result[date] = {
-      readingMinutes: clamp(item.readingMinutes, 0, 360),
-      trainingStatus: normalizeTrainingStatus(item.trainingStatus),
-      diaryDone: Boolean(item.diaryDone)
-    };
-  }
-  return result;
-}
 
 function migrateLegacyText(value, oldDefaults, newDefault) {
   const text = typeof value === "string" ? value.trim() : "";
@@ -535,8 +653,7 @@ function migrateLegacyText(value, oldDefaults, newDefault) {
 }
 
 function normalizeReadingMinutes(value) {
-  const clamped = clamp(value, 0, 180);
-  return Math.round(clamped / 5) * 5;
+  return Math.trunc(clamp(value, 0, 360));
 }
 
 function normalizeTrainingStatus(value) {
@@ -547,24 +664,6 @@ function normalizeAcceptanceStatus(value) {
   return ["待验收", "已通过"].includes(value) ? value : "待验收";
 }
 
-function getWeekKey(isoDate) {
-  const date = parseLocalDate(isoDate);
-  const day = date.getDay() || 7;
-  date.setDate(date.getDate() - day + 1);
-  return toLocalISODate(date);
-}
-
-function parseLocalDate(isoDate) {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function toLocalISODate(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function formatDisplayDate(isoDate) {
   const [year, month, day] = isoDate.split("-").map(Number);
@@ -574,3 +673,4 @@ function formatDisplayDate(isoDate) {
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, Number(value) || 0));
 }
+
