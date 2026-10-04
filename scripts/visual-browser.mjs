@@ -121,8 +121,10 @@ try {
   const targets = await page.locator(".editor-tab, #reading-minutes, #training-status, #diary-done, #download-button, .mobile-header-actions a").evaluateAll((nodes) => nodes.map((node) => ({ id: node.id, height: node.getBoundingClientRect().height })));
   assert.ok(targets.every((target) => target.height >= 48), JSON.stringify(targets));
   await screenshot(page, "mobile-390-form");
+  await page.screenshot({ path: path.join(output, "mobile-390-form-viewport.png"), fullPage: false });
   await page.locator("#tab-preview").click();
   await screenshot(page, "mobile-390-preview");
+  await page.screenshot({ path: path.join(output, "mobile-390-preview-viewport.png"), fullPage: false });
   const downloadEvent = page.waitForEvent("download");
   await page.locator("#download-button").click();
   const download = await downloadEvent;
@@ -131,10 +133,10 @@ try {
   assert.match(download.suggestedFilename(), /\.png$/);
   const png = await page.locator("#preview-forest").evaluate((image) => ({ width: image.naturalWidth, height: image.naturalHeight }));
   assert.deepEqual(png, { width: 1080, height: 1536 });
-  assert.deepEqual(mobile.errors, []);
   report.push({ check: "mobile keyboard, repeated tabs, >=48px touch targets, live PNG download", passed: true, targets, png });
   await page.locator("#tab-form").click();
   await assertExpandedFits(page, "mobile-390-expanded");
+  assert.deepEqual(mobile.errors, []);
   await mobile.context.close();
 
   for (const width of [320, 760]) {

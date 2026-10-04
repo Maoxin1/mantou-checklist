@@ -1,4 +1,4 @@
-# mantou 博客视觉对齐（待浏览器验收）
+# mantou 博客视觉对齐与验收记录
 
 日期：2026-10-04
 
@@ -39,11 +39,32 @@
 - 关键正文、次文字与按钮配色对比度均满足 AA 普通文字 4.5:1
 - 192×192 / 512×512 图标尺寸检查
 
-## 未完成的验收与发布门槛
+## 已完成的真实浏览器验收
 
-本轮运行 `npm run test:browser` 时，Chromium 在初始化阶段因 `socket() failed: Operation not permitted` 退出，0 个浏览器用例执行。未修改权限或启动参数绕过限制。`smoke:local`、真实截图、真实 Canvas PNG、离线重开、移动端实机本轮均未运行通过。已有可靠性版本曾通过的 15 项浏览器回归不能算作本分支验收。
+GitHub Actions [Validate run 37206619539](https://github.com/Maoxin1/mantou-checklist/actions/runs/37206619539)，对应 PR head `bb4ce679acb6d34a8e69a7b2c7966f41e2b5a237`，全部通过：
 
-发布前应在可用开发环境执行：
+- 27 项状态与视觉契约测试
+- 15 项 Chromium 数据可靠性回归：日期、日记、旧状态迁移、存储失败、备份与恢复、多窗口防覆盖
+- 离线刷新与离线冷启动、PWA 安装入口、PNG 下载、JSON 备份恢复
+- 320 / 390 / 760 / 1280px 页面及窄屏展开设置，零横向溢出
+- 模拟手机 hasTouch/isMobile，真实触屏事件测试页签、日记和滑块；键盘左右/Home/End/Tab 焦点流及重复切换
+- 48px 以上主要触控目标，实际 PNG 文件签名/IHDR/1080×1536/内容字节校验
+- 长阶段文字和三个长交付物海报导出
+- 依赖审计：0 漏洞
+
+已下载本次 CI 的真实桌面/手机截图并人工查看：字标与 P1 等比、中文可见、表单与窄屏展开态无明显横向裁切、海报三个交付物未越界。CI 的固定日期和演示数据不来自用户的真实浏览器状态。工件保留 14 天；后续 PR 与 main 运行的同名 `checklist-browser-evidence` 工件会保留新证据。
+
+此环境的本地 Chromium 仍因 `socket() failed: Operation not permitted` 无法启动；真实浏览器证据来自上述 GitHub runner，没有修改本地权限或启动参数绕过限制。
+
+## 仍需注意与发布边界
+
+- Chromium 手机模拟通过不等于 iOS Safari、Android 手机实机都验证；软键盘和系统安全区仍建议在实际手机发布前确认
+- 完整字体通过系统后备提供，跨系统字形和字宽允许轻微差异；未增加远程字体请求
+- 单独交付的 HTML 预览为独立演示数据和内存存储，不注册 SW，不改正式数据
+- 首批海报 PNG 为同绘图参数的矢量样张，非浏览器截图；现在以 CI 真实截图与 PNG 为浏览器验收证据
+- 现有 `docs/images/` 仍保留此前版本的截图，不与本次 CI 工件混淆
+
+常规验证命令：
 
 ```sh
 npm ci
@@ -51,11 +72,8 @@ npm run check
 npm test
 npm run test:browser
 npm run smoke:local
+npm run test:visual
 npm run build
 ```
 
-人工检查 320 / 390 / 760 / 1280px：没有横向溢出；软件键盘与底部条不遮挡输入；页签焦点及屏幕阅读器名称；长标题与最多三个交付物的海报；PNG 下载；已有安装升级到 v28 后可断网刷新填写、预览、导入与下载。iOS Safari 与 Android Chrome 各验收一次。
-
-现有 `docs/images/` 是此前版本的真实浏览器截图，未用模拟图替换。单独交付的 HTML 是同一代码的交互预览：为安全检查使用独立演示数据和内存存储，不注册 SW，不改正式数据。单独海报 PNG 为同绘图参数生成的矢量样张，非浏览器截图，字体度量可能与实际浏览器略有差异。
-
-本轮未推送、未创建 PR、未合并、未部署。需要完成上述验收并获得发布许可后再发布。
+用户已批准提交并推进合并，最新状态见 [PR #16](https://github.com/Maoxin1/mantou-checklist/pull/16)。本次不包含 Cloudflare 发布；此前生产 ZIP 保持原样。正式部署另行确认。
