@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import vm from "node:vm";
 import { readFileSync } from "node:fs";
 import * as stateHelpers from "../state.js";
+import { drawIdentity } from "../identity.js";
 
 const source = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const config = JSON.parse(readFileSync(new URL("../config.json", import.meta.url), "utf8"));
@@ -24,7 +25,7 @@ function createApp(seed = base(), storage = new Map()) {
     return nodes.get(selector);
   };
   if (seed !== undefined) storage.set(key, JSON.stringify(seed));
-  const sandbox = { ...stateHelpers, console, structuredClone,
+  const sandbox = { ...stateHelpers, drawIdentity, console, structuredClone,
     Date: class extends Date { constructor(...args) { super(...(args.length ? args : [time])); } static now() { return new Date(time).getTime(); } },
     document: { querySelector: select, addEventListener() {}, fonts: { ready: Promise.resolve() }, createElement() { return { click() {}, getContext() { return new Proxy({ measureText: (text) => ({ width: String(text).length * 20 }) }, { get: (obj, key) => obj[key] || (() => {}) }); }, toDataURL() { return "data:image/png;base64,AAAA"; } }; } },
     window: { listeners: {}, matchMedia: () => ({ matches: false }), addEventListener(type, fn) { this.listeners[type] = fn; } },
@@ -32,7 +33,7 @@ function createApp(seed = base(), storage = new Map()) {
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }
   };
   const context = vm.createContext(sandbox);
-  vm.runInContext(source.replace(/^import[^\n]+\n/, "").replace("const config = await loadConfig();", `const config = ${JSON.stringify(config)};`), context);
+  vm.runInContext(source.replace(/^import[^\n]+\n/gm, "").replace("const config = await loadConfig();", `const config = ${JSON.stringify(config)};`), context);
   return { sandbox, nodes, storage, eval: (code) => vm.runInContext(code, context), time: (value) => { time = value; },
     input(id, value) { const target = select(`#${id}`); if (target.type === "checkbox") target.checked = value; else target.value = String(value); select("#checklist-form").listeners.input({ target }); },
     date(value) { select("#date").value = value; select("#date").listeners.change(); }
