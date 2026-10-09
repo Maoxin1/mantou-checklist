@@ -1,5 +1,7 @@
 # mantou 定投清单：PWA 名称与图标
 
+当前状态（2026-10-09）：[PR #17](https://github.com/Maoxin1/mantou-checklist/pull/17) 已合并到 `main`，提交 `18a5991ee7bf7846c4425db616060c6519c0515d`。[main Validate](https://github.com/Maoxin1/mantou-checklist/actions/runs/37895729462) 和 [Production smoke](https://github.com/Maoxin1/mantou-checklist/actions/runs/37900670370) 均成功。下文“未合并或部署”描述的是当时的历史阶段；系统级图标/名称更新和实际手机记录耗时仍需使用验收，不因 CI 成功自动关闭。
+
 日期：2026-10-09。基线：GitHub main `f5a6f38e6a95b71b9655cadf8b1bd31d7693bd1d`，修改前所有源文件均与该版本 Git blob 校验一致。
 
 ## 范围
