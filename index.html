@@ -4,12 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#fffaf1" />
-    <meta name="description" content="只更新几个事实，即可生成个人定投状态卡片" />
+    <meta name="description" content="mantou 定投清单：只更新几个事实，即可生成每日行动卡片" />
+    <meta name="application-name" content="mantou 定投清单" />
+    <meta name="apple-mobile-web-app-title" content="mantou 定投清单" />
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20" />
-    <title>个人定投清单生成器</title>
+    <link rel="stylesheet" href="./styles.css?v=21" />
+    <title>mantou 定投清单</title>
   </head>
   <body>
     <a class="skip-link" href="#checklist-form">跳到今日填写</a>
@@ -18,7 +20,7 @@
         <img class="brand-wordmark app-wordmark" src="./identity/mantou-wordmark-ink.svg" alt="mantou" width="144" height="40" />
       </a>
       <div class="header-actions">
-        <a href="./editor">手机编辑器 ↗</a>
+        <a href="./editor">手机推荐入口 ↗</a>
         <a href="https://mantou-blog.pages.dev/">回到博客 ↗</a>
         <button id="install-button" class="button button-ghost" type="button" hidden>安装到桌面</button>
       </div>
@@ -26,8 +28,9 @@
     <div class="app-intro">
       <div>
         <p class="eyebrow">长期主义 · 每日行动</p>
-        <h1>个人定投清单</h1>
+        <h1>mantou 定投清单</h1>
         <p class="intro-copy">每天三件事，留下一点向前的证据。</p>
+        <p class="install-guidance">手机使用与安装，推荐先打开<a href="./editor">手机编辑器</a>，再点右上角“安装”。</p>
       </div>
       <div class="intro-companion" aria-hidden="true">
         <span>慢慢来，<br />也一直向前。</span>
@@ -186,7 +189,7 @@
     <footer class="app-footer">把时间转化为能力、资本与自主权。</footer>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=26"></script>
+    <script type="module" src="./app.js?v=27"></script>
     <script type="module" src="./backup.js"></script>
   </body>
 </html>

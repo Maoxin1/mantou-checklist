@@ -1,8 +1,8 @@
 {
   "id": "./editor",
-  "name": "mantou 个人定投编辑器",
-  "short_name": "定投编辑器",
-  "description": "可离线填写、预览并下载个人定投清单",
+  "name": "mantou 定投清单",
+  "short_name": "mantou 定投清单",
+  "description": "mantou 定投清单：记录每日行动，离线填写、预览并下载清单图片",
   "lang": "zh-CN",
   "start_url": "./editor",
   "scope": "./",

@@ -149,8 +149,24 @@ try {
     assert.deepEqual(phone.errors, []);
     await phone.context.close();
   }
-  for (const width of [320, 760, 1280]) {
+  for (const width of [320, 390, 760, 1280]) {
     const desktop = await open("/", width, 1000);
+    await desktop.page.evaluate(() => document.fonts.ready);
+    const titleLines = await desktop.page.locator(".app-intro h1").evaluate((heading) => {
+      const node = heading.firstChild;
+      const lines = new Map();
+      for (let i = 0; i < node.textContent.length; i++) {
+        const range = document.createRange();
+        range.setStart(node, i);
+        range.setEnd(node, i + 1);
+        const top = Math.round(range.getBoundingClientRect().top);
+        lines.set(top, (lines.get(top) || "") + node.textContent[i]);
+      }
+      return [...lines.values()].map((line) => line.trim()).filter(Boolean);
+    });
+    assert.equal((await desktop.page.locator(".app-intro h1").textContent()).trim(), "mantou 定投清单");
+    assert.ok(!titleLines.some((line) => /^[\u3400-\u9fff]$/.test(line)), `orphaned title character at ${width}px: ${JSON.stringify(titleLines)}`);
+    report.push({ check: `balanced brand title ${width}px`, lines: titleLines, passed: true });
     await screenshot(desktop.page, `desktop-${width}`);
     if (width < 1280) await assertExpandedFits(desktop.page, `desktop-${width}-expanded`);
     if (width === 1280) {
