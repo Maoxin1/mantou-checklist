@@ -31,7 +31,7 @@ inkscape icons/icon-512.svg --export-type=png --export-filename=icons/icon-512.p
 
 本轮 PNG 使用已安装的 Inkscape SVG 渲染器生成。无新增 npm 依赖，无 AI 图像生成。
 
-## 验证结果与边界
+## 初始本地验证结果与边界
 
 - `npm run check`、`node --check scripts/generate-icons.mjs`、`npm test`（30 项）、`npm run build`、`git diff --check` 通过。
 - 新增名称、安装引导、原有应用身份/数据键、P1 原路径、遮罩安全区、PNG 尺寸测试。
@@ -40,4 +40,12 @@ inkscape icons/icon-512.svg --export-type=png --export-filename=icons/icon-512.p
 - 支持的独立云浏览器不允许 file URL，也无法连接此执行器的本地 HTTP 端口；未绕过限制。
 - 待可用浏览器环境或经批准的 CI 完成：320 / 390 / 1280 宽度、完整填写/预览/导出、安装提示重复点击、离线更新与真实设备主屏幕效果。iOS / Android 系统对既有图标与名称的刷新时机也需实机确认；不要通过清除浏览器数据来强制刷新。
 
-本轮仅完成本地改动与可运行的验证，未推送、创建 PR、合并或部署。
+## 草稿 PR 与首轮 CI
+
+用户随后批准独立分支、草稿 PR 和完整 CI，已创建 [PR #17](https://github.com/Maoxin1/mantou-checklist/pull/17)，未合并或部署。
+
+[Validate 37894088406](https://github.com/Maoxin1/mantou-checklist/actions/runs/37894088406) 对应 head `7dfe3e10aab4bee4f4f414306682414bef4ccd03`：30 项测试、15 项 Chromium 数据回归、离线/PWA/备份冒烟、响应式/触控/键盘及 PNG 检查均通过。已下载并查看真实 390px 手机、1280px 桌面与海报截图；中文与 P1 显示正常。图标和名称的系统级更新仍未做实机验收。
+
+此运行仅依赖审计失败：旧开发工具 Wrangler 4.147.0 → Miniflare → sharp 命中 GHSA-wq5f-xc86-pv6w 高危公告，需另行批准更新开发依赖后再次完整验证。没有降低审计级别或跳过检查。
+
+截图还发现根页面 320px 标题末字单独换行。本补丁增加平衡换行，并将真实浏览器标题行测试扩展到 320 / 390 / 760 / 1280px，确保名称逐字不变且没有单字孤行；最终结果以最新 PR head 的 CI 为准。

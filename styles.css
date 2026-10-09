@@ -35,7 +35,7 @@ button:disabled { cursor: wait; opacity: .65; }
 .header-actions a { display: inline-flex; align-items: center; min-height: 48px; font-size: 13px; color: var(--muted); text-decoration: none; }
 .header-actions a:hover { color: var(--accent); text-decoration: underline; }
 .app-intro { display: flex; align-items: center; justify-content: space-between; gap: 32px; padding: 36px 0 32px; }
-.app-intro h1 { margin: 0; font-size: 38px; font-weight: 700; line-height: 1.45; letter-spacing: -.04em; }
+.app-intro h1 { text-wrap: balance; margin: 0; font-size: 38px; font-weight: 700; line-height: 1.45; letter-spacing: -.04em; }
 .eyebrow, .step-label { margin: 0 0 8px; color: var(--accent); font-size: 11px; font-weight: 600; letter-spacing: .1em; }
 .intro-copy { margin: 10px 0 0; color: var(--muted); font-size: 15px; }
 .intro-companion { display: flex; align-items: center; gap: 24px; padding-right: 12px; }
