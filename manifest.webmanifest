@@ -1,7 +1,7 @@
 {
-  "name": "个人定投清单生成器",
-  "short_name": "个人定投",
-  "description": "填写公开字段并生成一页式个人定投清单图片",
+  "name": "mantou 定投清单",
+  "short_name": "mantou 定投清单",
+  "description": "mantou 定投清单：记录每日行动，离线填写、预览并下载清单图片",
   "lang": "zh-CN",
   "start_url": "./",
   "scope": "./",

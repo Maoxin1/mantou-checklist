@@ -237,7 +237,7 @@ function bindEvents() {
   window.addEventListener("appinstalled", () => {
     installPrompt = null;
     elements.install.hidden = true;
-    showToast("已安装到手机");
+    showToast("mantou 定投清单已安装");
   });
 }
 
@@ -457,7 +457,7 @@ async function downloadPoster() {
     await document.fonts.ready;
     const dataUrl = createPosterDataUrl();
     const link = document.createElement("a");
-    link.download = `个人定投-${elements.date.value || "今日"}.png`;
+    link.download = `mantou 定投清单-${elements.date.value || "今日"}.png`;
     link.href = dataUrl;
     link.click();
     showToast("PNG 已生成并下载");
@@ -504,7 +504,7 @@ function drawEvergreenPoster(context, state, fontFamily) {
   context.fillRect(0, 0, 1080, 1536);
   drawIdentity(context, "wordmark", 72, 43, 196, 51);
   drawFitText(context, formatDisplayDate(state.date), 1008, 80, 320, 28, 600, fontFamily, theme.muted, "right");
-  drawFitText(context, "个人定投 · 行动档案", 72, 177, 815, 60, 700, fontFamily, theme.ink);
+  drawFitText(context, "mantou 定投清单", 72, 177, 815, 60, 700, fontFamily, theme.ink);
   context.fillStyle = "#edc29e";
   context.fillRect(74, 195, 476, 7);
   drawFitText(context, state.motto || config.motto, 72, 249, 850, 28, 400, fontFamily, theme.muted);
@@ -608,7 +608,7 @@ function setCanvasFont(context, weight, size, family) {
 
 async function installApp() {
   if (window.matchMedia("(display-mode: standalone)").matches) {
-    showToast("编辑器已作为应用运行");
+    showToast("mantou 定投清单已作为应用运行");
     return;
   }
   if (!installPrompt) {
@@ -625,8 +625,8 @@ function getInstallHelpMessage() {
   const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
     (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
   return isIOS
-    ? "请使用 Safari 的“分享”，选择“添加到主屏幕”"
-    : "请打开浏览器菜单，选择“安装应用”或“添加到主屏幕”";
+    ? "请使用 Safari 的“分享”→“添加到主屏幕”，安装 mantou 定投清单"
+    : "请打开浏览器菜单，选择“安装应用”或“添加到主屏幕”，安装 mantou 定投清单";
 }
 
 function registerServiceWorker() {

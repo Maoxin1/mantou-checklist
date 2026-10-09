@@ -127,3 +127,7 @@ input:focus, select:focus { border-color: var(--accent); }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }
 @media (forced-colors: active) { .switch-row input { appearance: auto; } .switch-row input::before, .switch-row input::after { display: none; } }
+
+/* A quiet, persistent route hint before installing the mobile app. */
+.install-guidance { max-width: 34em; margin: 12px 0 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.install-guidance a { color: var(--ink); text-underline-offset: 3px; }
