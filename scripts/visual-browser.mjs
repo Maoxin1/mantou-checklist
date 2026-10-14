@@ -13,14 +13,7 @@ const server = await startTestServer(path.join(root, "dist"));
 const report = [];
 let browser;
 let currentPage;
-const config = {
-  diaryDay: 42, bodyPhase: "阅读与训练实践", bodyMeta: "稳步推进",
-  investmentPhase: "长期观察与复盘", readingPhase: "当前阅读材料",
-  readingTargetMinutes: 90, weeklyReadingTargetMinutes: 450, weeklyStrengthTarget: 3,
-  trainingStatus: "未训练", nextResult: "完成本周阅读笔记", nextResultDate: "待验收",
-  nextResult2: "", nextResultDate2: "待验收", nextResult3: "", nextResultDate3: "待验收",
-  motto: "把时间转化为能力、资本与自主权。"
-};
+const config = { ...JSON.parse(await readFile(path.join(root, "config.json"), "utf8")), diaryDay: 42 };
 
 async function screenshot(page, name) {
   await page.evaluate(() => document.fonts.ready);
@@ -43,7 +36,7 @@ async function assertExpandedFits(page, label) {
   const summaries = page.locator("details:not([open]) > summary");
   while (await summaries.count()) await summaries.first().click();
   await assertFits(page, label);
-  const overflow = await page.locator("#checklist-form input:not([type=file]), #checklist-form select, #checklist-form button, #checklist-form summary").evaluateAll((nodes) => nodes.map((node) => ({ id: node.id, x: node.getBoundingClientRect().x, right: node.getBoundingClientRect().right })).filter((node) => node.x < -1 || node.right > innerWidth + 1));
+  const overflow = await page.locator("#checklist-form input:not([type=file]), #checklist-form textarea, #checklist-form select, #checklist-form button, #checklist-form summary").evaluateAll((nodes) => nodes.map((node) => ({ id: node.id, x: node.getBoundingClientRect().x, right: node.getBoundingClientRect().right })).filter((node) => node.x < -1 || node.right > innerWidth + 1));
   assert.deepEqual(overflow, [], label);
   await screenshot(page, label.replaceAll(" ", "-"));
 }
@@ -100,7 +93,7 @@ try {
   await page.keyboard.press("ArrowLeft");
   assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "form");
 
-  const slider = page.getByRole("slider", { name: "破界行动分钟" });
+  const slider = page.getByRole("slider", { name: "阅读与思考分钟" });
   await slider.focus();
   await slider.press("Home");
   await slider.press("ArrowRight");
@@ -136,6 +129,13 @@ try {
   report.push({ check: "mobile keyboard, repeated tabs, >=48px touch targets, live PNG download", passed: true, targets, png });
   await page.locator("#tab-form").click();
   await assertExpandedFits(page, "mobile-390-expanded");
+  assert.equal(await page.locator("#investment-phase").count(), 0);
+  assert.equal(await page.locator("#reading-phase").inputValue(), config.readingPhase);
+  const revisedReading = "精读：《Beyond Feelings》\n略读：《The Craft of Research》· 第二遍";
+  await page.locator("#reading-phase").fill(revisedReading);
+  await page.evaluate(() => window.checklistStorage.save());
+  await page.reload({ waitUntil: "networkidle" });
+  assert.equal(await page.locator("#reading-phase").inputValue(), revisedReading, "multiline book names survive save and reload");
   assert.deepEqual(mobile.errors, []);
   await mobile.context.close();
 
@@ -170,9 +170,11 @@ try {
     await screenshot(desktop.page, `desktop-${width}`);
     if (width < 1280) await assertExpandedFits(desktop.page, `desktop-${width}-expanded`);
     if (width === 1280) {
-      await desktop.page.getByText("阶段与成果设置", { exact: true }).click();
+      await desktop.page.getByText("当前重点与阅读设置", { exact: true }).click();
+      await desktop.page.getByText("本周交付物（可选）", { exact: true }).click();
       await desktop.page.locator("#body-phase").fill("长期阅读与实践的阶段性成果验证");
       await desktop.page.locator("#body-meta").fill("持续记录并根据真实反馈修正行动");
+      await desktop.page.locator("#reading-phase").fill("精读：《Beyond Feelings：批判性思维的理解、练习与实际应用》\n略读：《The Craft of Research：从问题、证据到论证的研究方法》");
       for (const selector of ["#next-result", "#next-result-2", "#next-result-3"]) await desktop.page.locator(selector).fill("完成本周阅读笔记并交付一个可以验证和复用的作品");
       await desktop.page.locator("#next-result-date").selectOption("已通过");
       await desktop.page.waitForTimeout(400);

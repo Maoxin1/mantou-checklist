@@ -60,7 +60,7 @@ test("page and imported visual assets are all present in the offline shell", () 
       assert.ok(existsSync(new URL(`../${file.split("?")[0]}`, import.meta.url)), file);
       assert.ok(shell.includes(`"${file}"`), `${file} absent from offline shell`);
     }
-    assert.match(html, /name="readingMinutes" aria-label="破界行动分钟"/);
+    assert.match(html, /name="readingMinutes" aria-label="阅读与思考分钟"/);
   }
   assert.ok(shell.includes('"./identity.js"'));
   assert.ok(read("scripts/build.mjs").includes('"identity.js"'));

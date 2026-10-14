@@ -10,7 +10,7 @@
     <link rel="manifest" href="./editor.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=21" />
+    <link rel="stylesheet" href="./styles.css?v=22" />
     <link rel="stylesheet" href="./editor.css?v=19" />
     <title>mantou 定投清单</title>
   </head>
@@ -53,16 +53,16 @@
             <div class="reading-control">
               <div class="reading-control-head">
                 <div>
-                  <span class="reading-control-title">破界行动</span>
-                  <small>高质量阅读与批判性思维训练</small>
+                  <span class="reading-control-title">阅读与思考</span>
+                  <small>记录阅读、理解与思考的投入时间</small>
                 </div>
                 <output id="reading-minutes-value" class="reading-value" for="reading-minutes">0 分钟</output>
               </div>
-              <input id="reading-minutes" class="reading-range" name="readingMinutes" aria-label="破界行动分钟" type="range" min="0" max="180" step="5" value="0" aria-describedby="reading-target" />
+              <input id="reading-minutes" class="reading-range" name="readingMinutes" aria-label="阅读与思考分钟" type="range" min="0" max="180" step="5" value="0" aria-describedby="reading-target" />
               <div class="reading-marks" aria-hidden="true">
                 <span>0</span><span>30</span><span>60</span><span class="target-mark">90</span><span>120</span><span>150</span><span>180</span>
               </div>
-              <p id="reading-target" class="reading-target">目标 90 分钟</p>
+              <p id="reading-target" class="reading-target">每日计划 90 分钟 · 每周保底 7.5 小时</p>
             </div>
             <label>
               <span>今日训练</span>
@@ -83,7 +83,7 @@
           </fieldset>
 
           <details>
-            <summary>阶段与成果设置</summary>
+            <summary>当前重点与阅读设置</summary>
             <label>
               <span>记录与发布日期（仅本周）</span>
               <input id="date" name="date" type="date" />
@@ -93,55 +93,56 @@
               <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
             </label>
             <label>
-              <span>当前阶段</span>
+              <span>主实验</span>
               <input id="body-phase" name="bodyPhase" type="text" maxlength="24" />
             </label>
             <label>
-              <span>阶段补充</span>
+              <span>实验状态</span>
               <input id="body-meta" name="bodyMeta" type="text" maxlength="24" />
             </label>
             <label>
-              <span>投资阶段</span>
-              <input id="investment-phase" name="investmentPhase" type="text" maxlength="30" />
-            </label>
-            <label>
               <span>当前阅读</span>
-              <input id="reading-phase" name="readingPhase" type="text" maxlength="36" />
+              <textarea id="reading-phase" name="readingPhase" rows="3" maxlength="160" aria-describedby="reading-phase-help"></textarea>
+              <small id="reading-phase-help">每行一本，可注明精读或略读。</small>
             </label>
-            <label>
-              <span>交付物 1</span>
-              <input id="next-result" name="nextResult" type="text" maxlength="30" />
-            </label>
-            <label>
-              <span>验收状态 1</span>
-              <select id="next-result-date" name="nextResultDate">
-                <option value="待验收">待验收</option>
-                <option value="已通过">已通过</option>
-              </select>
-            </label>
-            <label>
-              <span>交付物 2</span>
-              <input id="next-result-2" name="nextResult2" type="text" maxlength="30" />
-            </label>
-            <label>
-              <span>验收状态 2</span>
-              <select id="next-result-date-2" name="nextResultDate2">
-                <option value="待验收">待验收</option>
-                <option value="已通过">已通过</option>
-              </select>
-            </label>
-            <label>
-              <span>交付物 3</span>
-              <input id="next-result-3" name="nextResult3" type="text" maxlength="30" />
-            </label>
-            <label>
-              <span>验收状态 3</span>
-              <select id="next-result-date-3" name="nextResultDate3">
-                <option value="待验收">待验收</option>
-                <option value="已通过">已通过</option>
-              </select>
-            </label>
-            <button id="apply-phase-defaults" class="text-button" type="button">恢复当前阶段默认值</button>
+            <details>
+              <summary>本周交付物（可选）</summary>
+              <p class="backup-description">暂时没有明确成果时留空，图片会隐藏整个板块。</p>
+              <label>
+                <span>交付物 1</span>
+                <input id="next-result" name="nextResult" type="text" maxlength="30" />
+              </label>
+              <label>
+                <span>验收状态 1</span>
+                <select id="next-result-date" name="nextResultDate">
+                  <option value="待验收">待验收</option>
+                  <option value="已通过">已通过</option>
+                </select>
+              </label>
+              <label>
+                <span>交付物 2</span>
+                <input id="next-result-2" name="nextResult2" type="text" maxlength="30" />
+              </label>
+              <label>
+                <span>验收状态 2</span>
+                <select id="next-result-date-2" name="nextResultDate2">
+                  <option value="待验收">待验收</option>
+                  <option value="已通过">已通过</option>
+                </select>
+              </label>
+              <label>
+                <span>交付物 3</span>
+                <input id="next-result-3" name="nextResult3" type="text" maxlength="30" />
+              </label>
+              <label>
+                <span>验收状态 3</span>
+                <select id="next-result-date-3" name="nextResultDate3">
+                  <option value="待验收">待验收</option>
+                  <option value="已通过">已通过</option>
+                </select>
+              </label>
+            </details>
+            <button id="apply-phase-defaults" class="text-button" type="button">恢复当前重点默认值</button>
           </details>
 
           <details>
@@ -164,7 +165,7 @@
           </details>
         </form>
 
-        <p class="privacy-note">破界行动分钟、训练状态和日记状态都只保存在当前设备。</p>
+        <p class="privacy-note">阅读与思考分钟、训练状态和日记状态都只保存在当前设备。</p>
       </section>
 
       <section id="panel-preview" class="mobile-preview-view" role="tabpanel" tabindex="0" aria-labelledby="tab-preview">
@@ -188,7 +189,7 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./app.js?v=27"></script>
+    <script type="module" src="./app.js?v=28"></script>
     <script type="module" src="./editor.js?v=20"></script>
     <script type="module" src="./backup.js"></script>
   </body>
