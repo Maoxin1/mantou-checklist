@@ -3,15 +3,14 @@ import { drawIdentity } from "./identity.js";
 
 const fallbackConfig = {
   diaryDay: 1291,
-  bodyPhase: "作息重构实验 V1",
-  bodyMeta: "5:00–8:00",
-  investmentPhase: "主动投资系统建设中",
-  readingPhase: "认知类书籍",
+  bodyPhase: "作息重构",
+  bodyMeta: "进行中",
+  readingPhase: "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   readingTargetMinutes: 90,
   weeklyReadingTargetMinutes: 450,
   weeklyStrengthTarget: 3,
   trainingStatus: "未训练",
-  nextResult: "完成14天 V1 验收",
+  nextResult: "",
   nextResultDate: "待验收",
   nextResult2: "",
   nextResultDate2: "待验收",
@@ -27,8 +26,8 @@ const elements = {
   date: document.querySelector("#date"),
   bodyPhase: document.querySelector("#body-phase"),
   bodyMeta: document.querySelector("#body-meta"),
-  investmentPhase: document.querySelector("#investment-phase"),
   readingPhase: document.querySelector("#reading-phase"),
+  readingTarget: document.querySelector("#reading-target"),
   readingMinutes: document.querySelector("#reading-minutes"),
   readingMinutesValue: document.querySelector("#reading-minutes-value"),
   trainingStatus: document.querySelector("#training-status"),
@@ -113,10 +112,11 @@ function buildInitialState(saved, today) {
 
   return {
     date: today,
-    bodyPhase: migrateLegacyText(saved?.bodyPhase, ["减脂收官", "精干强健计划"], config.bodyPhase),
-    bodyMeta: migrateLegacyText(saved?.bodyMeta, ["9.19验收", "持续期"], config.bodyMeta),
-    investmentPhase: saved?.investmentPhase || config.investmentPhase,
-    readingPhase: migrateLegacyText(saved?.readingPhase, ["Beyond Feelings · W1"], config.readingPhase),
+    bodyPhase: migrateLegacyText(saved?.bodyPhase, ["减脂收官", "精干强健计划", "作息重构实验 V1", "作息重构实验"], config.bodyPhase),
+    bodyMeta: migrateLegacyText(saved?.bodyMeta, ["9.19验收", "持续期", "5:00–8:00", "正式开启"], config.bodyMeta),
+    // Keep legacy backup content readable without exposing the retired investment field.
+    investmentPhase: saved?.investmentPhase || "",
+    readingPhase: migrateLegacyText(saved?.readingPhase, ["Beyond Feelings · W1", "认知类书籍"], config.readingPhase),
     readingMinutes: sameDay && saved?.readingMinutes !== undefined
       ? normalizeReadingMinutes(saved.readingMinutes)
       : normalizeReadingMinutes(daily.readingMinutes),
@@ -127,7 +127,7 @@ function buildInitialState(saved, today) {
     diaryDay: Math.max(0, Number(saved?.diaryDay ?? config.diaryDay) || 0),
     weekKey: currentWeek,
     weekLog,
-    nextResult: migrateLegacyText(saved?.nextResult, ["批判性判断框架 v0.1"], config.nextResult),
+    nextResult: migrateLegacyText(saved?.nextResult, ["批判性判断框架 v0.1", "完成14天 V1 验收"], config.nextResult),
     nextResultDate: normalizeAcceptanceStatus(saved?.nextResultDate || config.nextResultDate),
     nextResult2: saved?.nextResult2 || config.nextResult2,
     nextResultDate2: normalizeAcceptanceStatus(saved?.nextResultDate2 || config.nextResultDate2),
@@ -189,7 +189,7 @@ function bindEvents() {
     dirty = true;
     render();
     void saveState();
-    showToast("已恢复当前阶段默认值");
+    showToast("已恢复当前重点默认值");
   });
   elements.form.addEventListener("focusin", refreshCalendar);
   window.addEventListener("focus", refreshCalendar);
@@ -247,8 +247,8 @@ function fillForm(state) {
   elements.date.max = weekEnd(elements.date.min);
   elements.bodyPhase.value = state.bodyPhase;
   elements.bodyMeta.value = state.bodyMeta;
-  elements.investmentPhase.value = state.investmentPhase;
   elements.readingPhase.value = state.readingPhase;
+  elements.readingTarget.textContent = `每日计划 ${Number(config.readingTargetMinutes) || 90} 分钟 · 每周保底 ${((Number(config.weeklyReadingTargetMinutes) || 450) / 60).toFixed(1)} 小时`;
   syncReadingSlider(state.readingMinutes);
   elements.trainingStatus.value = state.trainingStatus;
   elements.diaryDone.checked = state.diaryDone;
@@ -512,26 +512,33 @@ function drawEvergreenPoster(context, state, fontFamily) {
   context.fillStyle = theme.line;
   context.fillRect(72, 286, 936, 2);
 
-  drawArchiveCard(context, 54, 314, 972, 280, theme.white, theme.primary);
-  drawFitText(context, "阶段推进", 94, 376, 300, 29, 700, fontFamily, theme.primary);
-  drawArchiveRow(context, 94, 438, "主实验", `${state.bodyPhase || "未填写"}${state.bodyMeta ? ` · ${state.bodyMeta}` : ""}`, theme, fontFamily);
-  drawArchiveRow(context, 94, 502, "投资", state.investmentPhase || "未填写", theme, fontFamily);
-  drawArchiveRow(context, 94, 566, "当前阅读", state.readingPhase || "未填写", theme, fontFamily);
+  setCanvasFont(context, 400, 32, fontFamily);
+  const readingLines = wrapReadingText(context, state.readingPhase || "未填写", 740);
+  const focusHeight = 248 + Math.max(0, readingLines.length - 2) * 38;
+  drawArchiveCard(context, 54, 314, 972, focusHeight, theme.white, theme.primary);
+  drawFitText(context, "当前重点", 94, 376, 300, 29, 700, fontFamily, theme.primary);
+  drawArchiveRow(context, 94, 432, "主实验", `${state.bodyPhase || "未填写"}${state.bodyMeta ? ` · ${state.bodyMeta}` : ""}`, theme, fontFamily);
+  drawFitText(context, "当前阅读", 94, 496, 150, 27, 600, fontFamily, theme.muted);
+  readingLines.forEach((line, index) => {
+    drawFitText(context, line, 264, 496 + index * 38, 740, 32, 400, fontFamily, theme.ink);
+  });
 
-  drawArchiveCard(context, 54, 630, 972, 310, "#edf0e3", theme.primary);
-  drawFitText(context, "今日积累", 94, 692, 300, 29, 700, fontFamily, theme.primary);
-  drawArchiveRow(context, 94, 760, "破界行动", `${state.readingMinutes} 分钟 · 目标 ≥ ${readingTarget}`, theme, fontFamily);
-  drawArchiveRow(context, 94, 834, "训练", state.trainingStatus, theme, fontFamily);
-  drawArchiveRow(context, 94, 908, "日记", `${diaryText} · 累计有效 ${state.diaryDay} 天`, theme, fontFamily);
+  const todayY = 314 + focusHeight + 28;
+  drawArchiveCard(context, 54, todayY, 972, 290, "#edf0e3", theme.primary);
+  drawFitText(context, "今日积累", 94, todayY + 62, 300, 29, 700, fontFamily, theme.primary);
+  drawArchiveRow(context, 94, todayY + 124, "阅读与思考", `${state.readingMinutes} 分钟 · 计划 ${readingTarget} 分钟`, theme, fontFamily);
+  drawArchiveRow(context, 94, todayY + 190, "训练", state.trainingStatus, theme, fontFamily);
+  drawArchiveRow(context, 94, todayY + 256, "日记", `${diaryText} · 累计有效 ${state.diaryDay} 天`, theme, fontFamily);
 
-  drawArchiveCard(context, 54, 976, 972, 250, "#f5e8de", theme.gold);
-  drawFitText(context, "本周进度", 94, 1038, 300, 29, 700, fontFamily, theme.gold);
-  drawFitText(context, "破界行动", 94, 1102, 260, 24, 600, fontFamily, theme.muted);
-  drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, 1150, 390, 36, 700, fontFamily, theme.ink);
-  drawProgressBar(context, 94, 1180, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
-  drawFitText(context, "力量训练", 586, 1102, 220, 24, 600, fontFamily, theme.muted);
-  drawFitText(context, `${stats.strengthCount} / ${weeklyStrengthTarget} 次`, 586, 1150, 300, 36, 700, fontFamily, theme.ink);
-  drawProgressBar(context, 586, 1180, 330, 14, stats.strengthCount, weeklyStrengthTarget, theme);
+  const weekY = todayY + 318;
+  drawArchiveCard(context, 54, weekY, 972, 230, "#f5e8de", theme.gold);
+  drawFitText(context, "本周投入", 94, weekY + 62, 300, 29, 700, fontFamily, theme.gold);
+  drawFitText(context, `阅读与思考 · 保底 ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 164, 390, 36, 700, fontFamily, theme.ink);
+  drawProgressBar(context, 94, weekY + 194, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
+  drawFitText(context, "力量训练", 586, weekY + 116, 220, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, `${stats.strengthCount} / ${weeklyStrengthTarget} 次`, 586, weekY + 164, 300, 36, 700, fontFamily, theme.ink);
+  drawProgressBar(context, 586, weekY + 194, 330, 14, stats.strengthCount, weeklyStrengthTarget, theme);
 
   const deliverables = [
     { value: state.nextResult, status: state.nextResultDate },
@@ -539,20 +546,42 @@ function drawEvergreenPoster(context, state, fontFamily) {
     { value: state.nextResult3, status: state.nextResultDate3 }
   ].filter((item) => item.value.trim());
 
-  const resultsHeight = 70 + Math.max(1, deliverables.length) * 48;
-  drawArchiveCard(context, 54, 1250, 972, resultsHeight, theme.white, theme.gold);
-  drawFitText(context, "本周交付物", 94, 1300, 300, 27, 700, fontFamily, theme.gold);
   if (deliverables.length) {
+    const resultsY = weekY + 258;
+    const resultsHeight = 70 + deliverables.length * 48;
+    drawArchiveCard(context, 54, resultsY, 972, resultsHeight, theme.white, theme.gold);
+    drawFitText(context, "本周交付物", 94, resultsY + 50, 300, 27, 700, fontFamily, theme.gold);
     deliverables.forEach((item, index) => {
-      drawResultRow(context, 94, 1344 + index * 45, String(index + 1).padStart(2, "0"), item.value, item.status, theme, fontFamily);
+      drawResultRow(context, 94, resultsY + 94 + index * 45, String(index + 1).padStart(2, "0"), item.value, item.status, theme, fontFamily);
     });
-  } else {
-    drawFitText(context, "暂无", 94, 1344, 240, 25, 700, fontFamily, theme.muted);
   }
 
   context.fillStyle = theme.line;
   context.fillRect(72, 1484, 936, 2);
   drawFitText(context, "每天一点，慢慢向前。", 72, 1520, 850, 27, 700, fontFamily, theme.muted);
+}
+
+function wrapReadingText(context, text, maxWidth, maxLines = 4) {
+  const lines = [];
+  for (const paragraph of String(text).split(/\r?\n/).filter((line) => line.trim())) {
+    let line = "";
+    for (const token of paragraph.trim().match(/[A-Za-z0-9]+|[^A-Za-z0-9]/gu) || []) {
+      for (const part of context.measureText(token).width > maxWidth ? [...token] : [token]) {
+        if (line && context.measureText(line + part).width > maxWidth) {
+          lines.push(line.trimEnd());
+          line = part.trimStart();
+        } else line += part;
+      }
+    }
+    if (line) lines.push(line.trimEnd());
+  }
+  if (lines.length > maxLines) {
+    lines.length = maxLines;
+    let last = [...lines[maxLines - 1]];
+    while (last.length && context.measureText(last.join("") + "…").width > maxWidth) last.pop();
+    lines[maxLines - 1] = last.join("") + "…";
+  }
+  return lines;
 }
 
 function drawArchiveCard(context, x, y, width, height, fill, accent) {

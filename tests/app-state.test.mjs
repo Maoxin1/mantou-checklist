@@ -16,9 +16,10 @@ function createApp(seed = base(), storage = new Map()) {
   let time = "2026-10-04T12:00:00";
   let timer = 0;
   const nodes = new Map();
+  const posterCalls = [];
   const select = (selector) => {
     if (!nodes.has(selector)) {
-      const names = { date: "date", "reading-minutes": "readingMinutes", "training-status": "trainingStatus", "diary-day": "diaryDay", "diary-done": "diaryDone", "investment-phase": "investmentPhase" };
+      const names = { date: "date", "reading-minutes": "readingMinutes", "training-status": "trainingStatus", "diary-day": "diaryDay", "diary-done": "diaryDone", "body-meta": "bodyMeta", "reading-phase": "readingPhase", "next-result": "nextResult" };
       const id = selector.replace(/^#/, "");
       nodes.set(selector, { value: "", name: names[id], type: id === "diary-done" ? "checkbox" : "text", checked: false, min: "0", max: "180", textContent: "", listeners: {}, style: { setProperty() {} }, classList: { add() {}, remove() {} }, setAttribute() {}, addEventListener(type, fn) { this.listeners[type] = fn; } });
     }
@@ -27,14 +28,14 @@ function createApp(seed = base(), storage = new Map()) {
   if (seed !== undefined) storage.set(key, JSON.stringify(seed));
   const sandbox = { ...stateHelpers, drawIdentity, console, structuredClone,
     Date: class extends Date { constructor(...args) { super(...(args.length ? args : [time])); } static now() { return new Date(time).getTime(); } },
-    document: { querySelector: select, addEventListener() {}, fonts: { ready: Promise.resolve() }, createElement() { return { click() {}, getContext() { return new Proxy({ measureText: (text) => ({ width: String(text).length * 20 }) }, { get: (obj, key) => obj[key] || (() => {}) }); }, toDataURL() { return "data:image/png;base64,AAAA"; } }; } },
+    document: { querySelector: select, addEventListener() {}, fonts: { ready: Promise.resolve() }, createElement() { return { click() {}, getContext() { return new Proxy({ measureText: (text) => ({ width: String(text).length * 20 }), fillText: (text, x, y) => posterCalls.push({ text, x, y }) }, { get: (obj, key) => obj[key] || (() => {}) }); }, toDataURL() { return "data:image/png;base64,AAAA"; } }; } },
     window: { listeners: {}, matchMedia: () => ({ matches: false }), addEventListener(type, fn) { this.listeners[type] = fn; } },
     navigator: {}, setTimeout: () => ++timer, clearTimeout() {},
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }
   };
   const context = vm.createContext(sandbox);
   vm.runInContext(source.replace(/^import[^\n]+\n/gm, "").replace("const config = await loadConfig();", `const config = ${JSON.stringify(config)};`), context);
-  return { sandbox, nodes, storage, eval: (code) => vm.runInContext(code, context), time: (value) => { time = value; },
+  return { sandbox, nodes, storage, posterCalls, eval: (code) => vm.runInContext(code, context), time: (value) => { time = value; },
     input(id, value) { const target = select(`#${id}`); if (target.type === "checkbox") target.checked = value; else target.value = String(value); select("#checklist-form").listeners.input({ target }); },
     date(value) { select("#date").value = value; select("#date").listeners.change(); }
   };
@@ -49,6 +50,51 @@ test("cross-week selection and repeated rendering cannot clear records or add di
   assert.equal(app.eval("JSON.stringify(getFormState())"), before);
   app.input("diary-done", true);
   assert.equal(app.eval("state.diaryDay"), 100);
+});
+
+test("reading-focus upgrade migrates known copy without changing daily records or diary totals", async () => {
+  for (const [bodyPhase, bodyMeta] of [["作息重构实验 V1", "5:00–8:00"], ["作息重构实验", "正式开启"]]) {
+    const legacy = { ...base(), bodyPhase, bodyMeta, readingPhase: "认知类书籍", investmentPhase: "主动投资系统建设中", nextResult: "完成14天 V1 验收" };
+    const app = createApp(legacy);
+    const updated = JSON.parse(app.eval("JSON.stringify(getFormState())"));
+    assert.equal(updated.bodyPhase, "作息重构");
+    assert.equal(updated.bodyMeta, "进行中");
+    assert.equal(updated.readingPhase, config.readingPhase);
+    assert.equal(updated.nextResult, "");
+    for (const field of ["readingMinutes", "diaryDay", "diaryDone", "trainingStatus", "weekLog", "investmentPhase"]) assert.deepEqual(updated[field], legacy[field]);
+    assert.equal(app.storage.get(key), JSON.stringify(legacy), "Loading and previewing must not overwrite old storage");
+    const text = app.posterCalls.map((call) => call.text);
+    for (const retired of ["投资", "主动投资系统建设中", "本周交付物", "暂无", "完成14天 V1 验收"]) assert.ok(!text.includes(retired));
+    for (const book of config.readingPhase.split("\n")) assert.ok(text.includes(book));
+    assert.equal(await app.eval("saveState()"), true);
+    const restored = createApp(stateHelpers.parseBackup(JSON.parse(app.storage.get(key))));
+    assert.equal(restored.eval("JSON.stringify(getFormState())"), JSON.stringify(updated));
+  }
+});
+
+test("custom focus, multiline books and optional results survive upgrade and backup restore", async () => {
+  const custom = { ...base(), bodyPhase: "我的实验", bodyMeta: "稳定运行", readingPhase: "精读：自选书\n略读：另一部书", nextResult: "我的本周观察", nextResultDate: "已通过" };
+  const app = createApp(custom);
+  for (const field of ["bodyPhase", "bodyMeta", "readingPhase", "nextResult", "nextResultDate"]) assert.equal(app.eval(`state.${field}`), custom[field]);
+  assert.ok(app.posterCalls.some((call) => call.text === "本周交付物"));
+  app.input("reading-phase", "精读：新书\n略读：新材料");
+  app.input("next-result", "");
+  assert.equal(await app.eval("saveState()"), true);
+  const reloaded = createApp(stateHelpers.parseBackup(JSON.parse(app.storage.get(key))));
+  assert.equal(reloaded.eval("state.readingPhase"), "精读：新书\n略读：新材料");
+  assert.equal(reloaded.eval("state.nextResult"), "");
+  assert.ok(!reloaded.posterCalls.some((call) => call.text === "本周交付物"));
+});
+
+test("long multiline reading text wraps without crowding optional results or the footer", () => {
+  const app = createApp({ ...base(), readingPhase: "精读：" + "长书名".repeat(40) + "\n略读：The Craft of Research", nextResult: "成果一", nextResult2: "成果二", nextResult3: "成果三" });
+  const reading = app.posterCalls.filter((call) => call.x === 264 && call.y >= 496 && call.y < 640);
+  assert.equal(reading.length, 4);
+  assert.ok(reading.at(-1).text.endsWith("…"));
+  assert.ok(reading.every((call) => call.text.length * 20 <= 740));
+  const results = app.posterCalls.filter((call) => /^成果[一二三]$/.test(call.text));
+  assert.equal(results.length, 3);
+  assert.ok(results.every((call) => call.y < 1484));
 });
 
 test("same-week switching synchronizes slider and diary toggle is idempotent", () => {
@@ -95,10 +141,10 @@ test("save re-reads storage and blocks a stale tab even without a storage event"
   const b = createApp(base(), storage);
   a.input("reading-minutes", 120);
   assert.equal(await a.eval("saveState()"), true);
-  b.input("investment-phase", "second tab edit");
+  b.input("body-meta", "second tab edit");
   assert.equal(await b.eval("saveState()"), false);
   assert.equal(JSON.parse(storage.get(key)).readingMinutes, 120);
-  assert.equal(b.eval("state.investmentPhase"), "second tab edit");
+  assert.equal(b.eval("state.bodyMeta"), "second tab edit");
   assert.match(b.nodes.get("#save-status").textContent, /另一窗口/);
 });
 

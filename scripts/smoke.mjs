@@ -52,8 +52,11 @@ await mainPage.locator("#reading-minutes").waitFor({ state: "visible", timeout: 
 await mainPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 
 await mainPage.locator("details").first().evaluate((details) => { details.open = true; });
-if ((await mainPage.locator("#body-phase").inputValue()) !== "作息重构实验 V1") throw new Error("当前阶段默认值异常");
-if ((await mainPage.locator("#reading-phase").inputValue()) !== "认知类书籍") throw new Error("当前阅读默认值异常");
+const expectedReading = "精读：《Beyond Feelings》\n略读：《The Craft of Research》";
+if ((await mainPage.locator("#body-phase").inputValue()) !== "作息重构") throw new Error("当前阶段默认值异常");
+if ((await mainPage.locator("#body-meta").inputValue()) !== "进行中") throw new Error("实验状态默认值异常");
+if ((await mainPage.locator("#reading-phase").inputValue()) !== expectedReading) throw new Error("当前阅读默认值异常");
+if (await mainPage.locator("#investment-phase").count()) throw new Error("已放弃的投资栏仍在显示");
 
 await mainPage.locator("#reading-minutes").evaluate((input) => {
   input.value = "100";
@@ -83,8 +86,11 @@ const posterText = await mainPage.evaluate(() => {
   }
   return text;
 });
-for (const expectedText of ["作息重构实验 V1 · 5:00–8:00", "破界行动", "100 分钟 · 目标 ≥ 90", "力量训练", "本周进度", "完成14天 V1 验收"]) {
+for (const expectedText of ["当前重点", "作息重构 · 进行中", ...expectedReading.split("\n"), "阅读与思考", "100 分钟 · 计划 90 分钟", "力量训练", "本周投入", "阅读与思考 · 保底 7.5 小时"]) {
   if (!posterText.includes(expectedText)) throw new Error(`成图缺少关键信息：${expectedText}`);
+}
+for (const retired of ["投资", "本周交付物", "暂无", "完成14天 V1 验收"]) {
+  if (posterText.includes(retired)) throw new Error(`成图仍含已隐藏的信息：${retired}`);
 }
 
 const exportPath = path.join(outputDir, "exported-v2.png");
@@ -153,8 +159,9 @@ await editorPage.reload({ waitUntil: "domcontentloaded" });
 await editorPage.waitForFunction(() => document.querySelector("#preview-forest")?.src.startsWith("data:image/png"));
 await editorPage.locator("[data-editor-view='form']").click();
 await editorPage.locator("details").first().evaluate((details) => { details.open = true; });
-if ((await editorPage.locator("#body-phase").inputValue()) !== "作息重构实验 V1") throw new Error("旧身体阶段未迁移");
-if ((await editorPage.locator("#reading-phase").inputValue()) !== "认知类书籍") throw new Error("旧阅读阶段未迁移");
+if ((await editorPage.locator("#body-phase").inputValue()) !== "作息重构") throw new Error("旧身体阶段未迁移");
+if ((await editorPage.locator("#reading-phase").inputValue()) !== expectedReading) throw new Error("旧阅读阶段未迁移");
+if ((await editorPage.locator("#next-result").inputValue()) !== "") throw new Error("旧默认验收项未隐藏");
 if ((await editorPage.locator("#reading-minutes").inputValue()) !== "0") throw new Error("旧数据未补齐阅读分钟");
 if ((await editorPage.locator("#training-status").inputValue()) !== "未训练") throw new Error("旧数据未补齐训练状态");
 if ((await editorPage.locator("#diary-day").inputValue()) !== "88") throw new Error("旧日记累计数据迁移失败");

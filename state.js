@@ -57,7 +57,7 @@ function validateState(state, { migrateLegacyDiaryTotal = false } = {}) {
     }
   }
   if ("readingMinutes" in state && (!Number.isInteger(state.readingMinutes) || state.readingMinutes < 0 || state.readingMinutes > 360)) {
-    throw new Error("破界行动分钟无效");
+    throw new Error("阅读与思考分钟无效");
   }
   if ("trainingStatus" in state && !TRAINING_STATUSES.includes(state.trainingStatus)) throw new Error("训练状态无效");
   if ("diaryDone" in state && typeof state.diaryDone !== "boolean") throw new Error("日记完成状态无效");
