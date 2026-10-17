@@ -503,9 +503,11 @@ function drawEvergreenPoster(context, state, fontFamily) {
   context.fillStyle = theme.paper;
   context.fillRect(0, 0, 1080, 1536);
   drawFitText(context, formatDisplayDate(state.date), 1008, 80, 320, 28, 600, fontFamily, theme.muted, "right");
-  drawFitText(context, "mantou 定投清单", 72, 177, 815, 60, 700, fontFamily, theme.ink);
+  // Keep the existing vector wordmark inline with the Chinese title, at its natural aspect ratio.
+  drawIdentity(context, "wordmark", 72, 125, 244, 56);
+  drawFitText(context, "定投清单", 334, 177, 553, 60, 700, fontFamily, theme.ink);
   context.fillStyle = "#edc29e";
-  context.fillRect(74, 195, 476, 7);
+  context.fillRect(74, 195, 500, 7);
   drawFitText(context, state.motto || config.motto, 72, 249, 850, 28, 400, fontFamily, theme.muted);
   drawIdentity(context, "walker", 935, 142, 54, 98);
   context.fillStyle = theme.line;

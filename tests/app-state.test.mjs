@@ -17,6 +17,7 @@ function createApp(seed = base(), storage = new Map()) {
   let timer = 0;
   const nodes = new Map();
   const posterCalls = [];
+  const identityCalls = [];
   const select = (selector) => {
     if (!nodes.has(selector)) {
       const names = { date: "date", "reading-minutes": "readingMinutes", "training-status": "trainingStatus", "diary-day": "diaryDay", "diary-done": "diaryDone", "body-meta": "bodyMeta", "reading-phase": "readingPhase", "next-result": "nextResult" };
@@ -26,7 +27,7 @@ function createApp(seed = base(), storage = new Map()) {
     return nodes.get(selector);
   };
   if (seed !== undefined) storage.set(key, JSON.stringify(seed));
-  const sandbox = { ...stateHelpers, drawIdentity, console, structuredClone,
+  const sandbox = { ...stateHelpers, drawIdentity(...args) { identityCalls.push({ name: args[1], x: args[2], y: args[3], width: args[4], height: args[5] }); return drawIdentity(...args); }, console, structuredClone,
     Date: class extends Date { constructor(...args) { super(...(args.length ? args : [time])); } static now() { return new Date(time).getTime(); } },
     document: { querySelector: select, addEventListener() {}, fonts: { ready: Promise.resolve() }, createElement() { return { click() {}, getContext() { return new Proxy({ measureText: (text) => ({ width: String(text).length * 20 }), fillText(text, x, y) { posterCalls.push({ text, x, y, font: this.font, color: this.fillStyle }); } }, { get: (obj, key) => obj[key] || (() => {}) }); }, toDataURL() { return "data:image/png;base64,AAAA"; } }; } },
     window: { listeners: {}, matchMedia: () => ({ matches: false }), addEventListener(type, fn) { this.listeners[type] = fn; } },
@@ -35,7 +36,7 @@ function createApp(seed = base(), storage = new Map()) {
   };
   const context = vm.createContext(sandbox);
   vm.runInContext(source.replace(/^import[^\n]+\n/gm, "").replace("const config = await loadConfig();", `const config = ${JSON.stringify(config)};`), context);
-  return { sandbox, nodes, storage, posterCalls, eval: (code) => vm.runInContext(code, context), time: (value) => { time = value; },
+  return { sandbox, nodes, storage, posterCalls, identityCalls, eval: (code) => vm.runInContext(code, context), time: (value) => { time = value; },
     input(id, value) { const target = select(`#${id}`); if (target.type === "checkbox") target.checked = value; else target.value = String(value); select("#checklist-form").listeners.input({ target }); },
     date(value) { select("#date").value = value; select("#date").listeners.change(); }
   };
@@ -338,9 +339,14 @@ test("poster separates actual reading from plan and preserves every recorded tra
     seed.weekLog[seed.date].trainingStatus = trainingStatus;
     const app = createApp(seed);
     app.posterCalls.length = 0;
+    app.identityCalls.length = 0;
     app.eval("createPosterDataUrl()");
     const calls = app.posterCalls;
-    assert.equal(calls.filter(({ text }) => text === "mantou 定投清单").length, 1);
+    assert.equal(calls.filter(({ text }) => text === "定投清单").length, 1);
+    assert.ok(!calls.some(({ text }) => text.includes("mantou")));
+    const wordmarks = app.identityCalls.filter(({ name }) => name === "wordmark");
+    assert.equal(wordmarks.length, 1);
+    assert.equal(wordmarks[0].x + wordmarks[0].width + 18, calls.find(({ text }) => text === "定投清单").x);
     const actual = calls.find(({ text }) => text === "90 分钟");
     const plan = calls.find(({ text }) => text === "计划 90 分钟");
     assert.ok(actual && plan);
@@ -354,7 +360,7 @@ test("poster separates actual reading from plan and preserves every recorded tra
     assert.equal(calls.filter(({ text }) => text.includes("7.5")).length, 1);
   }
   const posterSource = source.slice(source.indexOf("function drawEvergreenPoster"), source.indexOf("function wrapReadingText"));
-  assert.ok(!posterSource.includes('"wordmark"'));
+  assert.ok(posterSource.includes('"wordmark"'));
   assert.ok(posterSource.includes('"walker"'));
 });
 
@@ -366,6 +372,7 @@ test("poster emphasizes diary status over the cumulative count without changing 
     seed.weekLog[seed.date].diaryDone = diaryDone;
     const app = createApp(seed);
     app.posterCalls.length = 0;
+    app.identityCalls.length = 0;
     const before = app.eval("JSON.stringify(getFormState())");
     app.eval("createPosterDataUrl()");
     assert.equal(app.eval("JSON.stringify(getFormState())"), before);
