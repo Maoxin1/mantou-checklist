@@ -86,7 +86,7 @@ const posterText = await mainPage.evaluate(() => {
   }
   return text;
 });
-for (const expectedText of ["当前重点", "作息重构 · 进行中", ...expectedReading.split("\n"), "阅读与思考", "100 分钟 · 计划 90 分钟", "力量训练", "本周投入", "阅读与思考 · 保底 7.5 小时"]) {
+for (const expectedText of ["当前重点", "作息重构 · 进行中", ...expectedReading.split("\n"), "阅读与思考", "100 分钟", "计划 90 分钟", "训练记录", "力量训练", "✓ 已完成", `累计有效 ${savedMain.diaryDay} 天`, "本周投入", "阅读与思考 · 保底"]) {
   if (!posterText.includes(expectedText)) throw new Error(`成图缺少关键信息：${expectedText}`);
 }
 for (const retired of ["投资", "本周交付物", "暂无", "完成14天 V1 验收"]) {
