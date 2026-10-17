@@ -502,7 +502,6 @@ function drawEvergreenPoster(context, state, fontFamily) {
 
   context.fillStyle = theme.paper;
   context.fillRect(0, 0, 1080, 1536);
-  drawIdentity(context, "wordmark", 72, 43, 196, 51);
   drawFitText(context, formatDisplayDate(state.date), 1008, 80, 320, 28, 600, fontFamily, theme.muted, "right");
   drawFitText(context, "mantou 定投清单", 72, 177, 815, 60, 700, fontFamily, theme.ink);
   context.fillStyle = "#edc29e";
@@ -526,14 +525,18 @@ function drawEvergreenPoster(context, state, fontFamily) {
   const todayY = 314 + focusHeight + 28;
   drawArchiveCard(context, 54, todayY, 972, 290, "#edf0e3", theme.primary);
   drawFitText(context, "今日积累", 94, todayY + 62, 300, 29, 700, fontFamily, theme.primary);
-  drawArchiveRow(context, 94, todayY + 124, "阅读与思考", `${state.readingMinutes} 分钟 · 计划 ${readingTarget} 分钟`, theme, fontFamily);
-  drawArchiveRow(context, 94, todayY + 190, "训练", state.trainingStatus, theme, fontFamily);
-  drawArchiveRow(context, 94, todayY + 256, "日记", `${diaryText} · 累计有效 ${state.diaryDay} 天`, theme, fontFamily);
+  drawFitText(context, "阅读与思考", 94, todayY + 124, 150, 27, 600, fontFamily, theme.muted);
+  drawFitText(context, `${state.readingMinutes} 分钟`, 264, todayY + 124, 330, 36, 700, fontFamily, theme.ink);
+  drawFitText(context, `计划 ${readingTarget} 分钟`, 620, todayY + 124, 350, 26, 400, fontFamily, theme.muted);
+  drawArchiveRow(context, 94, todayY + 190, "训练记录", state.trainingStatus, theme, fontFamily);
+  drawFitText(context, "日记", 94, todayY + 256, 150, 27, 600, fontFamily, theme.muted);
+  drawFitText(context, diaryText, 264, todayY + 256, 330, 36, 700, fontFamily, theme.ink);
+  drawFitText(context, `累计有效 ${state.diaryDay} 天`, 620, todayY + 256, 350, 26, 400, fontFamily, theme.muted);
 
   const weekY = todayY + 318;
   drawArchiveCard(context, 54, weekY, 972, 230, "#f5e8de", theme.gold);
   drawFitText(context, "本周投入", 94, weekY + 62, 300, 29, 700, fontFamily, theme.gold);
-  drawFitText(context, `阅读与思考 · 保底 ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, "阅读与思考 · 保底", 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
   drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 164, 390, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 94, weekY + 194, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
   drawFitText(context, "力量训练", 586, weekY + 116, 220, 24, 600, fontFamily, theme.muted);

@@ -1,11 +1,11 @@
-const CACHE_NAME = "personal-investment-checklist-v30";
+const CACHE_NAME = "personal-investment-checklist-v31";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./editor",
   "./styles.css?v=22",
   "./editor.css?v=19",
-  "./app.js?v=28",
+  "./app.js?v=29",
   "./editor.js?v=20",
   "./config.json",
   "./state.js",

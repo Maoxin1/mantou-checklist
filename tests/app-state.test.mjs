@@ -28,7 +28,7 @@ function createApp(seed = base(), storage = new Map()) {
   if (seed !== undefined) storage.set(key, JSON.stringify(seed));
   const sandbox = { ...stateHelpers, drawIdentity, console, structuredClone,
     Date: class extends Date { constructor(...args) { super(...(args.length ? args : [time])); } static now() { return new Date(time).getTime(); } },
-    document: { querySelector: select, addEventListener() {}, fonts: { ready: Promise.resolve() }, createElement() { return { click() {}, getContext() { return new Proxy({ measureText: (text) => ({ width: String(text).length * 20 }), fillText: (text, x, y) => posterCalls.push({ text, x, y }) }, { get: (obj, key) => obj[key] || (() => {}) }); }, toDataURL() { return "data:image/png;base64,AAAA"; } }; } },
+    document: { querySelector: select, addEventListener() {}, fonts: { ready: Promise.resolve() }, createElement() { return { click() {}, getContext() { return new Proxy({ measureText: (text) => ({ width: String(text).length * 20 }), fillText(text, x, y) { posterCalls.push({ text, x, y, font: this.font, color: this.fillStyle }); } }, { get: (obj, key) => obj[key] || (() => {}) }); }, toDataURL() { return "data:image/png;base64,AAAA"; } }; } },
     window: { listeners: {}, matchMedia: () => ({ matches: false }), addEventListener(type, fn) { this.listeners[type] = fn; } },
     navigator: {}, setTimeout: () => ++timer, clearTimeout() {},
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) }
@@ -328,4 +328,54 @@ test("legacy correction survives rollover and clean-tab synchronization", async 
   assert.equal(app.nodes.get("#data-notice").hidden, false);
   assert.match(app.nodes.get("#data-notice").textContent, /从 0 校正为 2/);
   assert.equal(await app.eval("saveState()"), true);
+});
+
+
+test("poster separates actual reading from plan and preserves every recorded training state", () => {
+  for (const trainingStatus of ["力量训练", "激活", "恢复", "未训练"]) {
+    const seed = base();
+    seed.trainingStatus = trainingStatus;
+    seed.weekLog[seed.date].trainingStatus = trainingStatus;
+    const app = createApp(seed);
+    app.posterCalls.length = 0;
+    app.eval("createPosterDataUrl()");
+    const calls = app.posterCalls;
+    assert.equal(calls.filter(({ text }) => text === "mantou 定投清单").length, 1);
+    const actual = calls.find(({ text }) => text === "90 分钟");
+    const plan = calls.find(({ text }) => text === "计划 90 分钟");
+    assert.ok(actual && plan);
+    assert.match(actual.font, /700 36px/);
+    assert.match(plan.font, /400 26px/);
+    assert.notEqual(actual.color, plan.color);
+    assert.ok(actual.x < plan.x);
+    const trainingLabel = calls.find(({ text }) => text === "训练记录");
+    assert.ok(calls.some(({ text, y }) => text === trainingStatus && y === trainingLabel.y));
+    assert.ok(calls.some(({ text }) => text === "阅读与思考 · 保底"));
+    assert.equal(calls.filter(({ text }) => text.includes("7.5")).length, 1);
+  }
+  const posterSource = source.slice(source.indexOf("function drawEvergreenPoster"), source.indexOf("function wrapReadingText"));
+  assert.ok(!posterSource.includes('"wordmark"'));
+  assert.ok(posterSource.includes('"walker"'));
+});
+
+
+test("poster emphasizes diary status over the cumulative count without changing either", () => {
+  for (const diaryDone of [false, true]) {
+    const seed = base();
+    seed.diaryDone = diaryDone;
+    seed.weekLog[seed.date].diaryDone = diaryDone;
+    const app = createApp(seed);
+    app.posterCalls.length = 0;
+    const before = app.eval("JSON.stringify(getFormState())");
+    app.eval("createPosterDataUrl()");
+    assert.equal(app.eval("JSON.stringify(getFormState())"), before);
+    const status = app.posterCalls.find(({ text }) => text === (diaryDone ? "✓ 已完成" : "— 待完成"));
+    const total = app.posterCalls.find(({ text }) => text === "累计有效 100 天");
+    assert.ok(status && total);
+    assert.match(status.font, /700 36px/);
+    assert.match(total.font, /400 26px/);
+    assert.notEqual(status.color, total.color);
+    assert.equal(status.y, total.y);
+    assert.ok(status.x < total.x);
+  }
 });
