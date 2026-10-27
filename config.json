@@ -5,7 +5,7 @@
   "readingPhase": "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   "readingTargetMinutes": 90,
   "weeklyReadingTargetMinutes": 450,
-  "weeklyStrengthTarget": 3,
+  "weeklyStrengthTarget": 2,
   "trainingStatus": "未训练",
   "nextResult": "",
   "nextResultDate": "待验收",
@@ -13,5 +13,9 @@
   "nextResultDate2": "待验收",
   "nextResult3": "",
   "nextResultDate3": "待验收",
-  "motto": "把时间转化为能力、资本与自主权。"
+  "motto": "把时间转化为能力、资本与自主权。",
+  "trainingTrial": {
+    "start": "2026-10-27",
+    "end": "2026-11-09"
+  }
 }

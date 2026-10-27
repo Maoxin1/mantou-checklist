@@ -70,11 +70,14 @@
               <span>今日训练</span>
               <select id="training-status" name="trainingStatus">
                 <option value="力量训练">力量训练</option>
+                <option value="羽毛球">羽毛球</option>
                 <option value="激活">激活</option>
                 <option value="恢复">恢复</option>
                 <option value="未训练">未训练</option>
               </select>
             </label>
+            <p id="training-trial-status"></p>
+            <small id="training-trial-schedule"></small>
             <label class="switch-row">
               <span>
                 <strong>今日已写日记</strong>
@@ -86,6 +89,8 @@
 
           <details>
             <summary>当前重点与阅读设置</summary>
+            <p id="training-trial-period"></p>
+            <p><a href="https://github.com/Maoxin1/mantou-training" target="_blank" rel="noopener">查看训练卡</a></p>
             <label>
               <span>记录与发布日期（仅本周）</span>
               <input id="date" name="date" type="date" />
@@ -190,7 +195,7 @@
     <footer class="app-footer">把时间转化为能力、资本与自主权。</footer>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=30"></script>
+    <script type="module" src="./app.js?v=32"></script>
     <script type="module" src="./backup.js"></script>
   </body>
 </html>

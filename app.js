@@ -8,7 +8,8 @@ const fallbackConfig = {
   readingPhase: "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   readingTargetMinutes: 90,
   weeklyReadingTargetMinutes: 450,
-  weeklyStrengthTarget: 3,
+  weeklyStrengthTarget: 2,
+  trainingTrial: { start: "2026-10-27", end: "2026-11-09" },
   trainingStatus: "未训练",
   nextResult: "",
   nextResultDate: "待验收",
@@ -30,6 +31,9 @@ const elements = {
   readingTarget: document.querySelector("#reading-target"),
   readingMinutes: document.querySelector("#reading-minutes"),
   readingMinutesValue: document.querySelector("#reading-minutes-value"),
+  trainingTrialPeriod: document.querySelector("#training-trial-period"),
+  trainingTrialSchedule: document.querySelector("#training-trial-schedule"),
+  trainingTrialStatus: document.querySelector("#training-trial-status"),
   trainingStatus: document.querySelector("#training-status"),
   diaryDone: document.querySelector("#diary-done"),
   diaryDay: document.querySelector("#diary-day"),
@@ -251,6 +255,10 @@ function fillForm(state) {
   elements.readingTarget.textContent = `每日计划 ${Number(config.readingTargetMinutes) || 90} 分钟 · 每周保底 ${((Number(config.weeklyReadingTargetMinutes) || 450) / 60).toFixed(1)} 小时`;
   syncReadingSlider(state.readingMinutes);
   elements.trainingStatus.value = state.trainingStatus;
+  const trial = config.trainingTrial;
+  elements.trainingTrialPeriod.textContent = `${trial.start} — ${trial.end} · ${trainingTrialStatus(state.date)}`;
+  elements.trainingTrialStatus.textContent = `两周试行 · ${trainingTrialStatus(state.date)}`;
+  elements.trainingTrialSchedule.textContent = `每周${Number(config.weeklyStrengthTarget) || 2}次力量训练 · 周末一次羽毛球`;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
   elements.nextResult.value = state.nextResult;
@@ -497,7 +505,7 @@ function drawEvergreenPoster(context, state, fontFamily) {
   const stats = getWeeklyStats(state);
   const readingTarget = Number(config.readingTargetMinutes) || 90;
   const weeklyReadingTarget = Number(config.weeklyReadingTargetMinutes) || 450;
-  const weeklyStrengthTarget = Number(config.weeklyStrengthTarget) || 3;
+  const weeklyStrengthTarget = Number(config.weeklyStrengthTarget) || 2;
   const diaryText = state.diaryDone ? "✓ 已完成" : "— 待完成";
 
   context.fillStyle = theme.paper;
@@ -696,6 +704,11 @@ function getWeeklyStats(state) {
 }
 
 
+function trainingTrialStatus(date) {
+  const { start, end } = config.trainingTrial;
+  return date < start ? "待开始" : date > end ? "待复盘" : "试行中";
+}
+
 function migrateLegacyText(value, oldDefaults, newDefault) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text || oldDefaults.includes(text)) return newDefault;
@@ -707,7 +720,7 @@ function normalizeReadingMinutes(value) {
 }
 
 function normalizeTrainingStatus(value) {
-  return ["力量训练", "激活", "恢复", "未训练"].includes(value) ? value : "未训练";
+  return ["力量训练", "羽毛球", "激活", "恢复", "未训练"].includes(value) ? value : "未训练";
 }
 
 function normalizeAcceptanceStatus(value) {
