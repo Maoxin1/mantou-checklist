@@ -5,7 +5,7 @@
   "readingPhase": "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   "readingTargetMinutes": 90,
   "weeklyReadingTargetMinutes": 450,
-  "weeklyStrengthTarget": 3,
+  "weeklyStrengthTarget": 2,
   "trainingStatus": "未训练",
   "nextResult": "",
   "nextResultDate": "待验收",
@@ -13,5 +13,11 @@
   "nextResultDate2": "待验收",
   "nextResult3": "",
   "nextResultDate3": "待验收",
-  "motto": "把时间转化为能力、资本与自主权。"
+  "motto": "把时间转化为能力、资本与自主权。",
+  "trainingTrial": {
+    "start": "2026-10-27",
+    "end": "2026-11-09",
+    "schedule": "周二、周四全身训练 · 周末一次羽毛球",
+    "plan": "俯卧撑 2组×6–12次；弹力带划船 2组×10–15次；扶稳原地分腿蹲 每侧2组×8–12次；臀桥 2组×12–20次；死虫式 每侧2组×6–10次。"
+  }
 }

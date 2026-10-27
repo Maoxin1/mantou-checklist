@@ -333,7 +333,7 @@ test("legacy correction survives rollover and clean-tab synchronization", async 
 
 
 test("poster separates actual reading from plan and preserves every recorded training state", () => {
-  for (const trainingStatus of ["力量训练", "激活", "恢复", "未训练"]) {
+  for (const trainingStatus of ["力量训练", "羽毛球", "激活", "恢复", "未训练"]) {
     const seed = base();
     seed.trainingStatus = trainingStatus;
     seed.weekLog[seed.date].trainingStatus = trainingStatus;
@@ -385,4 +385,35 @@ test("poster emphasizes diary status over the cumulative count without changing 
     assert.equal(status.y, total.y);
     assert.ok(status.x < total.x);
   }
+});
+
+test("two-week training content keeps other focus and reports badminton without counting it as strength", async () => {
+  const seed = { ...base(), bodyPhase: "作息重构", bodyMeta: "进行中" };
+  const app = createApp(seed);
+  app.input("training-status", "羽毛球");
+  assert.equal(app.eval("getWeeklyStats(state).strengthCount"), 0);
+  assert.equal(app.eval("state.bodyPhase"), seed.bodyPhase);
+  assert.equal(app.eval("state.diaryDay"), seed.diaryDay);
+  assert.equal(await app.eval("saveState()"), true);
+  const restored = createApp(stateHelpers.parseBackup(JSON.parse(app.storage.get(key))));
+  assert.equal(restored.eval("state.trainingStatus"), "羽毛球");
+  assert.equal(restored.eval("state.weekLog[state.date].trainingStatus"), "羽毛球");
+  assert.equal(restored.eval("getWeeklyStats(state).strengthCount"), 0);
+  restored.input("training-status", "力量训练");
+  assert.equal(restored.eval("getWeeklyStats(state).strengthCount"), 1);
+  assert.equal(config.weeklyStrengthTarget, 2);
+  restored.eval("createPosterDataUrl()");
+  assert.ok(restored.posterCalls.some(({ text }) => text === "1 / 2 次"));
+});
+
+test("fixed trial dates show pending, running and review without inventing completion or increasing targets", () => {
+  const app = createApp();
+  for (const [date, status] of [["2026-10-26", "待开始"], ["2026-10-27", "试行中"], ["2026-11-09", "试行中"], ["2026-11-10", "待复盘"]]) {
+    app.sandbox.trialDate = date;
+    assert.equal(app.eval("trainingTrialStatus(trialDate)"), status);
+  }
+  const before = app.eval("JSON.stringify(state)");
+  app.eval("createPosterDataUrl()");
+  assert.equal(app.eval("JSON.stringify(state)"), before);
+  assert.equal(config.weeklyStrengthTarget, 2);
 });

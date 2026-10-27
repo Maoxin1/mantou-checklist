@@ -8,7 +8,8 @@ const fallbackConfig = {
   readingPhase: "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   readingTargetMinutes: 90,
   weeklyReadingTargetMinutes: 450,
-  weeklyStrengthTarget: 3,
+  weeklyStrengthTarget: 2,
+  trainingTrial: {"start": "2026-10-27", "end": "2026-11-09", "schedule": "周二、周四全身训练 · 周末一次羽毛球", "plan": "俯卧撑 2组×6–12次；弹力带划船 2组×10–15次；扶稳原地分腿蹲 每侧2组×8–12次；臀桥 2组×12–20次；死虫式 每侧2组×6–10次。"},
   trainingStatus: "未训练",
   nextResult: "",
   nextResultDate: "待验收",
@@ -30,6 +31,9 @@ const elements = {
   readingTarget: document.querySelector("#reading-target"),
   readingMinutes: document.querySelector("#reading-minutes"),
   readingMinutesValue: document.querySelector("#reading-minutes-value"),
+  trainingTrialPeriod: document.querySelector("#training-trial-period"),
+  trainingTrialSchedule: document.querySelector("#training-trial-schedule"),
+  trainingTrialPlan: document.querySelector("#training-trial-plan"),
   trainingStatus: document.querySelector("#training-status"),
   diaryDone: document.querySelector("#diary-done"),
   diaryDay: document.querySelector("#diary-day"),
@@ -251,6 +255,10 @@ function fillForm(state) {
   elements.readingTarget.textContent = `每日计划 ${Number(config.readingTargetMinutes) || 90} 分钟 · 每周保底 ${((Number(config.weeklyReadingTargetMinutes) || 450) / 60).toFixed(1)} 小时`;
   syncReadingSlider(state.readingMinutes);
   elements.trainingStatus.value = state.trainingStatus;
+  const trial = config.trainingTrial;
+  elements.trainingTrialPeriod.textContent = `${trial.start} — ${trial.end} · ${trainingTrialStatus(state.date)}`;
+  elements.trainingTrialSchedule.textContent = `${trial.schedule}；每周参考 ${Number(config.weeklyStrengthTarget) || 2} 次力量训练，两周计划4次，可顺延。`;
+  elements.trainingTrialPlan.textContent = trial.plan;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
   elements.nextResult.value = state.nextResult;
@@ -497,7 +505,7 @@ function drawEvergreenPoster(context, state, fontFamily) {
   const stats = getWeeklyStats(state);
   const readingTarget = Number(config.readingTargetMinutes) || 90;
   const weeklyReadingTarget = Number(config.weeklyReadingTargetMinutes) || 450;
-  const weeklyStrengthTarget = Number(config.weeklyStrengthTarget) || 3;
+  const weeklyStrengthTarget = Number(config.weeklyStrengthTarget) || 2;
   const diaryText = state.diaryDone ? "✓ 已完成" : "— 待完成";
 
   context.fillStyle = theme.paper;
@@ -538,10 +546,13 @@ function drawEvergreenPoster(context, state, fontFamily) {
   const weekY = todayY + 318;
   drawArchiveCard(context, 54, weekY, 972, 230, "#f5e8de", theme.gold);
   drawFitText(context, "本周投入", 94, weekY + 62, 300, 29, 700, fontFamily, theme.gold);
+  const trial = config.trainingTrial;
+  const period = `${trial.start.slice(5).replace("-", ".")}–${trial.end.slice(5).replace("-", ".")}`;
+  drawFitText(context, `${period} · ${trainingTrialStatus(state.date)}`, 586, weekY + 62, 350, 22, 600, fontFamily, theme.muted);
   drawFitText(context, "阅读与思考 · 保底", 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
   drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 164, 390, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 94, weekY + 194, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
-  drawFitText(context, "力量训练", 586, weekY + 116, 220, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, "力量训练 · 两周试行", 586, weekY + 116, 350, 24, 600, fontFamily, theme.muted);
   drawFitText(context, `${stats.strengthCount} / ${weeklyStrengthTarget} 次`, 586, weekY + 164, 300, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 586, weekY + 194, 330, 14, stats.strengthCount, weeklyStrengthTarget, theme);
 
@@ -696,6 +707,11 @@ function getWeeklyStats(state) {
 }
 
 
+function trainingTrialStatus(date) {
+  const { start, end } = config.trainingTrial;
+  return date < start ? "待开始" : date > end ? "待复盘" : "试行中";
+}
+
 function migrateLegacyText(value, oldDefaults, newDefault) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text || oldDefaults.includes(text)) return newDefault;
@@ -707,7 +723,7 @@ function normalizeReadingMinutes(value) {
 }
 
 function normalizeTrainingStatus(value) {
-  return ["力量训练", "激活", "恢复", "未训练"].includes(value) ? value : "未训练";
+  return ["力量训练", "羽毛球", "激活", "恢复", "未训练"].includes(value) ? value : "未训练";
 }
 
 function normalizeAcceptanceStatus(value) {

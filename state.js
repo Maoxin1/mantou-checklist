@@ -3,7 +3,7 @@
 export const STORAGE_KEY = "personal-investment-checklist:v1";
 export const RECOVERY_KEY = `${STORAGE_KEY}:recovery`;
 export const BACKUP_FORMAT = "mantou-personal-investment-checklist";
-export const TRAINING_STATUSES = ["力量训练", "激活", "恢复", "未训练"];
+export const TRAINING_STATUSES = ["力量训练", "羽毛球", "激活", "恢复", "未训练"];
 const TEXT_FIELDS = ["bodyPhase", "bodyMeta", "investmentPhase", "readingPhase", "nextResult", "nextResultDate", "nextResult2", "nextResultDate2", "nextResult3", "nextResultDate3", "motto"];
 const isObject = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
 
