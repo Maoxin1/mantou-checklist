@@ -9,7 +9,7 @@ const fallbackConfig = {
   readingTargetMinutes: 90,
   weeklyReadingTargetMinutes: 450,
   weeklyStrengthTarget: 2,
-  trainingTrial: {"start": "2026-10-27", "end": "2026-11-09", "schedule": "周二、周四全身训练 · 周末一次羽毛球", "plan": "俯卧撑 2组×6–12次；弹力带划船 2组×10–15次；扶稳原地分腿蹲 每侧2组×8–12次；臀桥 2组×12–20次；死虫式 每侧2组×6–10次。"},
+  trainingTrial: { start: "2026-10-27", end: "2026-11-09" },
   trainingStatus: "未训练",
   nextResult: "",
   nextResultDate: "待验收",
@@ -33,7 +33,7 @@ const elements = {
   readingMinutesValue: document.querySelector("#reading-minutes-value"),
   trainingTrialPeriod: document.querySelector("#training-trial-period"),
   trainingTrialSchedule: document.querySelector("#training-trial-schedule"),
-  trainingTrialPlan: document.querySelector("#training-trial-plan"),
+  trainingTrialStatus: document.querySelector("#training-trial-status"),
   trainingStatus: document.querySelector("#training-status"),
   diaryDone: document.querySelector("#diary-done"),
   diaryDay: document.querySelector("#diary-day"),
@@ -257,8 +257,8 @@ function fillForm(state) {
   elements.trainingStatus.value = state.trainingStatus;
   const trial = config.trainingTrial;
   elements.trainingTrialPeriod.textContent = `${trial.start} — ${trial.end} · ${trainingTrialStatus(state.date)}`;
-  elements.trainingTrialSchedule.textContent = `${trial.schedule}；每周参考 ${Number(config.weeklyStrengthTarget) || 2} 次力量训练，两周计划4次，可顺延。`;
-  elements.trainingTrialPlan.textContent = trial.plan;
+  elements.trainingTrialStatus.textContent = `两周试行 · ${trainingTrialStatus(state.date)}`;
+  elements.trainingTrialSchedule.textContent = `每周${Number(config.weeklyStrengthTarget) || 2}次力量训练 · 周末一次羽毛球`;
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
   elements.nextResult.value = state.nextResult;
@@ -546,13 +546,10 @@ function drawEvergreenPoster(context, state, fontFamily) {
   const weekY = todayY + 318;
   drawArchiveCard(context, 54, weekY, 972, 230, "#f5e8de", theme.gold);
   drawFitText(context, "本周投入", 94, weekY + 62, 300, 29, 700, fontFamily, theme.gold);
-  const trial = config.trainingTrial;
-  const period = `${trial.start.slice(5).replace("-", ".")}–${trial.end.slice(5).replace("-", ".")}`;
-  drawFitText(context, `${period} · ${trainingTrialStatus(state.date)}`, 586, weekY + 62, 350, 22, 600, fontFamily, theme.muted);
   drawFitText(context, "阅读与思考 · 保底", 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
   drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 164, 390, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 94, weekY + 194, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
-  drawFitText(context, "力量训练 · 两周试行", 586, weekY + 116, 350, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, "力量训练", 586, weekY + 116, 220, 24, 600, fontFamily, theme.muted);
   drawFitText(context, `${stats.strengthCount} / ${weeklyStrengthTarget} 次`, 586, weekY + 164, 300, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 586, weekY + 194, 330, 14, stats.strengthCount, weeklyStrengthTarget, theme);
 

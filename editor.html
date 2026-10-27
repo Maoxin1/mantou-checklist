@@ -74,16 +74,8 @@
                 <option value="未训练">未训练</option>
               </select>
             </label>
-            <details class="training-guide">
-              <summary>两周训练试行安排</summary>
-              <p id="training-trial-period"></p>
-              <p id="training-trial-schedule"></p>
-              <p id="training-trial-plan"></p>
-              <p>热身另计约5分钟，正课最多30分钟；划船、俯卧撑组间休息90–120秒，其余约60秒，目标余力约2–3次。</p>
-              <p>先校准动作难度、训练时间与恢复；到30分钟就结束，不赶动作。羽毛球后酸痛影响动作时顺延或减少训练；明确疼痛停止相关动作。</p>
-              <p>两周结束后复盘，不自动加量。此处只记当天实际活动；逐组次数、缺器械、部分完成原因与次日恢复仍记在训练卡。缺器械不把空手练习算作阻力训练，未训练也可如实选择。</p>
-              <p><a href="https://github.com/Maoxin1/mantou-training" target="_blank" rel="noopener">查看训练卡项目</a> · 此处同步计划内容，完成状态需按实际手动记录。</p>
-            </details>
+            <p id="training-trial-status"></p>
+            <small id="training-trial-schedule"></small>
             <label class="switch-row">
               <span>
                 <strong>今日已写日记</strong>
@@ -95,6 +87,8 @@
 
           <details>
             <summary>当前重点与阅读设置</summary>
+            <p id="training-trial-period"></p>
+            <p><a href="https://github.com/Maoxin1/mantou-training" target="_blank" rel="noopener">查看训练卡</a></p>
             <label>
               <span>记录与发布日期（仅本周）</span>
               <input id="date" name="date" type="date" />
@@ -200,7 +194,7 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./app.js?v=31"></script>
+    <script type="module" src="./app.js?v=32"></script>
     <script type="module" src="./editor.js?v=20"></script>
     <script type="module" src="./backup.js"></script>
   </body>
