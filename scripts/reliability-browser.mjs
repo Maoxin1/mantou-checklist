@@ -206,7 +206,7 @@ try {
       await page.locator("#reading-label").fill("阅读1h+");
       await page.locator("#training-label").fill("运动");
       await page.locator("#diary-label").fill("表达");
-      await page.locator("#custom-training-options").fill("游泳\\n乒乓球");
+      await page.locator("#custom-training-options").fill("游泳\n乒乓球");
       assert.equal(await page.locator("#training-status option[value='游泳']").count(), 1);
       await page.locator("#training-status").selectOption("游泳");
       await page.locator("#diary-done").check();
