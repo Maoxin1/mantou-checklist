@@ -53,7 +53,7 @@
             <div class="reading-control">
               <div class="reading-control-head">
                 <div>
-                  <span class="reading-control-title">阅读与思考</span>
+                  <span id="reading-name" class="reading-control-title">阅读与思考</span>
                   <small>记录阅读、理解与思考的投入时间</small>
                 </div>
                 <output id="reading-minutes-value" class="reading-value" for="reading-minutes">0 分钟</output>
@@ -65,7 +65,7 @@
               <p id="reading-target" class="reading-target">每日计划 90 分钟 · 每周保底 7.5 小时</p>
             </div>
             <label>
-              <span>今日训练</span>
+              <span id="training-name">今日训练</span>
               <select id="training-status" name="trainingStatus">
                 <option value="力量训练">力量训练</option>
                 <option value="羽毛球">羽毛球</option>
@@ -78,7 +78,7 @@
             <small id="training-trial-schedule"></small>
             <label class="switch-row">
               <span>
-                <strong>今日已写日记</strong>
+                <strong id="diary-name">今日已写日记</strong>
                 <small>只公开完成状态</small>
               </span>
               <input id="diary-done" name="diaryDone" type="checkbox" role="switch" />
@@ -94,7 +94,7 @@
               <input id="date" name="date" type="date" />
             </label>
             <label>
-              <span>累计有效日记天数</span>
+              <span id="diary-day-name">累计有效日记天数</span>
               <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
             </label>
             <label>
@@ -152,6 +152,28 @@
 
           <details>
             <summary>高级设置</summary>
+            <p class="backup-description">个性化只调整名称和训练选项，不会改变三项记录的类型（分钟 / 活动 / 完成状态），也不会清空已有记录。</p>
+            <label>
+              <span>图片标题</span>
+              <input id="poster-title" name="posterTitle" type="text" maxlength="20" placeholder="我的长期积累" />
+            </label>
+            <label>
+              <span>分钟记录名称</span>
+              <input id="reading-label" name="readingLabel" type="text" maxlength="10" placeholder="阅读与思考" />
+            </label>
+            <label>
+              <span>活动记录名称</span>
+              <input id="training-label" name="trainingLabel" type="text" maxlength="10" placeholder="训练记录" />
+            </label>
+            <label>
+              <span>完成记录名称</span>
+              <input id="diary-label" name="diaryLabel" type="text" maxlength="10" placeholder="日记" />
+            </label>
+            <label>
+              <span>额外活动选项（每行一项，最多 8 项）</span>
+              <textarea id="custom-training-options" name="customTrainingOptions" rows="3" maxlength="240" placeholder="游泳&#10;乒乓球"></textarea>
+              <small>默认训练选项保留；只有“力量训练”计入原有力量训练周统计。</small>
+            </label>
             <label>
               <span>长期口号</span>
               <input id="motto" name="motto" type="text" maxlength="36" />
@@ -194,7 +216,7 @@
     </div>
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script type="module" src="./app.js?v=32"></script>
+    <script type="module" src="./app.js?v=33"></script>
     <script type="module" src="./editor.js?v=20"></script>
     <script type="module" src="./backup.js"></script>
   </body>

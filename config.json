@@ -17,5 +17,10 @@
   "trainingTrial": {
     "start": "2026-10-27",
     "end": "2026-11-09"
-  }
+  },
+  "posterTitle": "mantou 定投清单",
+  "readingLabel": "阅读与思考",
+  "trainingLabel": "训练记录",
+  "diaryLabel": "日记",
+  "customTrainingOptions": ""
 }

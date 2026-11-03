@@ -1,4 +1,4 @@
-import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, parseLocalState, makeBackup } from "./state.js";
+import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, parseLocalState, makeBackup, TRAINING_STATUSES, isTrainingStatus, parseTrainingOptions } from "./state.js";
 import { drawIdentity } from "./identity.js";
 
 const fallbackConfig = {
@@ -17,7 +17,12 @@ const fallbackConfig = {
   nextResultDate2: "待验收",
   nextResult3: "",
   nextResultDate3: "待验收",
-  motto: "把时间转化为能力、资本与自主权。"
+  motto: "把时间转化为能力、资本与自主权。",
+  posterTitle: "mantou 定投清单",
+  readingLabel: "阅读与思考",
+  trainingLabel: "训练记录",
+  diaryLabel: "日记",
+  customTrainingOptions: ""
 };
 
 const config = await loadConfig();
@@ -28,6 +33,15 @@ const elements = {
   bodyPhase: document.querySelector("#body-phase"),
   bodyMeta: document.querySelector("#body-meta"),
   readingPhase: document.querySelector("#reading-phase"),
+  readingName: document.querySelector("#reading-name"),
+  trainingName: document.querySelector("#training-name"),
+  diaryName: document.querySelector("#diary-name"),
+  diaryDayName: document.querySelector("#diary-day-name"),
+  posterTitle: document.querySelector("#poster-title"),
+  readingLabel: document.querySelector("#reading-label"),
+  trainingLabel: document.querySelector("#training-label"),
+  diaryLabel: document.querySelector("#diary-label"),
+  customTrainingOptions: document.querySelector("#custom-training-options"),
   readingTarget: document.querySelector("#reading-target"),
   readingMinutes: document.querySelector("#reading-minutes"),
   readingMinutesValue: document.querySelector("#reading-minutes-value"),
@@ -137,7 +151,12 @@ function buildInitialState(saved, today) {
     nextResultDate2: normalizeAcceptanceStatus(saved?.nextResultDate2 || config.nextResultDate2),
     nextResult3: saved?.nextResult3 || config.nextResult3,
     nextResultDate3: normalizeAcceptanceStatus(saved?.nextResultDate3 || config.nextResultDate3),
-    motto: saved?.motto || config.motto
+    motto: saved?.motto || config.motto,
+    posterTitle: saved?.posterTitle ?? config.posterTitle,
+    readingLabel: saved?.readingLabel ?? config.readingLabel,
+    trainingLabel: saved?.trainingLabel ?? config.trainingLabel,
+    diaryLabel: saved?.diaryLabel ?? config.diaryLabel,
+    customTrainingOptions: saved?.customTrainingOptions ?? config.customTrainingOptions
   };
 }
 
@@ -163,6 +182,8 @@ function bindEvents() {
     state[field] = field === "readingMinutes" ? normalizeReadingMinutes(value)
       : field === "diaryDay" ? Math.min(Number.MAX_SAFE_INTEGER, Math.max(completedDiaryDays(), Math.trunc(Number(value) || 0)))
       : typeof value === "string" ? value.trim() : value;
+    if (["readingLabel", "trainingLabel", "diaryLabel"].includes(field)) syncDisplayLabels();
+    if (field === "customTrainingOptions") syncTrainingOptions();
     recordCurrentDay();
     dirty = true;
     // Do not rewrite text inputs on every keystroke (caret/IME composition).
@@ -254,7 +275,7 @@ function fillForm(state) {
   elements.readingPhase.value = state.readingPhase;
   elements.readingTarget.textContent = `每日计划 ${Number(config.readingTargetMinutes) || 90} 分钟 · 每周保底 ${((Number(config.weeklyReadingTargetMinutes) || 450) / 60).toFixed(1)} 小时`;
   syncReadingSlider(state.readingMinutes);
-  elements.trainingStatus.value = state.trainingStatus;
+  syncTrainingOptions();
   const trial = config.trainingTrial;
   elements.trainingTrialPeriod.textContent = `${trial.start} — ${trial.end} · ${trainingTrialStatus(state.date)}`;
   elements.trainingTrialStatus.textContent = `两周试行 · ${trainingTrialStatus(state.date)}`;
@@ -268,6 +289,40 @@ function fillForm(state) {
   elements.nextResult3.value = state.nextResult3;
   elements.nextResultDate3.value = state.nextResultDate3;
   elements.motto.value = state.motto;
+  elements.posterTitle.value = state.posterTitle;
+  elements.readingLabel.value = state.readingLabel;
+  elements.trainingLabel.value = state.trainingLabel;
+  elements.diaryLabel.value = state.diaryLabel;
+  elements.customTrainingOptions.value = state.customTrainingOptions;
+  syncDisplayLabels();
+}
+
+function syncDisplayLabels() {
+  const reading = state.readingLabel || config.readingLabel;
+  const training = state.trainingLabel || config.trainingLabel;
+  const diary = state.diaryLabel || config.diaryLabel;
+  elements.readingName.textContent = reading;
+  elements.trainingName.textContent = training === "训练记录" ? "今日训练" : `今日${training}`;
+  elements.diaryName.textContent = diary === "日记" ? "今日已写日记" : `今日${diary}已完成`;
+  elements.diaryDayName.textContent = diary === "日记" ? "累计有效日记天数" : `累计${diary}天数`;
+  elements.readingMinutes.setAttribute("aria-label", `${reading}分钟`);
+}
+
+function syncTrainingOptions() {
+  const control = elements.trainingStatus;
+  // A real select is populated here; test harnesses without DOM option APIs
+  // can still exercise the state and rendering logic independently.
+  if (typeof control.replaceChildren !== "function") return;
+  const options = [...new Set([...TRAINING_STATUSES, ...parseTrainingOptions(state.customTrainingOptions)])];
+  // Preserve a previously recorded option even after it was removed from presets.
+  if (isTrainingStatus(state.trainingStatus) && !options.includes(state.trainingStatus)) options.push(state.trainingStatus);
+  control.replaceChildren(...options.map((name) => {
+    const option = document.createElement("option");
+    option.value = name;
+    option.textContent = name;
+    return option;
+  }));
+  control.value = state.trainingStatus;
 }
 
 function syncReadingSlider(value = elements.readingMinutes.value) {
@@ -465,7 +520,7 @@ async function downloadPoster() {
     await document.fonts.ready;
     const dataUrl = createPosterDataUrl();
     const link = document.createElement("a");
-    link.download = `mantou 定投清单-${elements.date.value || "今日"}.png`;
+    link.download = `${(state.posterTitle || config.posterTitle).replace(/[\\/:*?"<>|]/gu, "").slice(0, 20) || "定投清单"}-${elements.date.value || "今日"}.png`;
     link.href = dataUrl;
     link.click();
     showToast("PNG 已生成并下载");
@@ -512,8 +567,13 @@ function drawEvergreenPoster(context, state, fontFamily) {
   context.fillRect(0, 0, 1080, 1536);
   drawFitText(context, formatDisplayDate(state.date), 1008, 80, 320, 28, 600, fontFamily, theme.muted, "right");
   // Keep the existing vector wordmark inline with the Chinese title, at its natural aspect ratio.
-  drawIdentity(context, "wordmark", 72, 125, 244, 56);
-  drawFitText(context, "定投清单", 334, 177, 553, 60, 700, fontFamily, theme.ink);
+  const posterTitle = state.posterTitle || config.posterTitle;
+  if (posterTitle === "mantou 定投清单") {
+    drawIdentity(context, "wordmark", 72, 125, 244, 56);
+    drawFitText(context, "定投清单", 334, 177, 553, 60, 700, fontFamily, theme.ink);
+  } else {
+    drawFitText(context, posterTitle, 72, 177, 850, 60, 700, fontFamily, theme.ink);
+  }
   context.fillStyle = "#edc29e";
   context.fillRect(74, 195, 500, 7);
   drawFitText(context, state.motto || config.motto, 72, 249, 850, 28, 400, fontFamily, theme.muted);
@@ -535,18 +595,18 @@ function drawEvergreenPoster(context, state, fontFamily) {
   const todayY = 314 + focusHeight + 28;
   drawArchiveCard(context, 54, todayY, 972, 290, "#edf0e3", theme.primary);
   drawFitText(context, "今日积累", 94, todayY + 62, 300, 29, 700, fontFamily, theme.primary);
-  drawFitText(context, "阅读与思考", 94, todayY + 124, 150, 27, 600, fontFamily, theme.muted);
+  drawFitText(context, state.readingLabel || config.readingLabel, 94, todayY + 124, 150, 27, 600, fontFamily, theme.muted);
   drawFitText(context, `${state.readingMinutes} 分钟`, 264, todayY + 124, 330, 36, 700, fontFamily, theme.ink);
   drawFitText(context, `计划 ${readingTarget} 分钟`, 620, todayY + 124, 350, 26, 400, fontFamily, theme.muted);
-  drawArchiveRow(context, 94, todayY + 190, "训练记录", state.trainingStatus, theme, fontFamily);
-  drawFitText(context, "日记", 94, todayY + 256, 150, 27, 600, fontFamily, theme.muted);
+  drawArchiveRow(context, 94, todayY + 190, state.trainingLabel || config.trainingLabel, state.trainingStatus, theme, fontFamily);
+  drawFitText(context, state.diaryLabel || config.diaryLabel, 94, todayY + 256, 150, 27, 600, fontFamily, theme.muted);
   drawFitText(context, diaryText, 264, todayY + 256, 330, 36, 700, fontFamily, theme.ink);
   drawFitText(context, `累计有效 ${state.diaryDay} 天`, 620, todayY + 256, 350, 26, 400, fontFamily, theme.muted);
 
   const weekY = todayY + 318;
   drawArchiveCard(context, 54, weekY, 972, 230, "#f5e8de", theme.gold);
   drawFitText(context, "本周投入", 94, weekY + 62, 300, 29, 700, fontFamily, theme.gold);
-  drawFitText(context, "阅读与思考 · 保底", 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
+  drawFitText(context, `${state.readingLabel || config.readingLabel} · 保底`, 94, weekY + 116, 460, 24, 600, fontFamily, theme.muted);
   drawFitText(context, `${(stats.readingMinutes / 60).toFixed(1)} / ${(weeklyReadingTarget / 60).toFixed(1)} 小时`, 94, weekY + 164, 390, 36, 700, fontFamily, theme.ink);
   drawProgressBar(context, 94, weekY + 194, 390, 14, stats.readingMinutes, weeklyReadingTarget, theme);
   drawFitText(context, "力量训练", 586, weekY + 116, 220, 24, 600, fontFamily, theme.muted);
@@ -571,7 +631,7 @@ function drawEvergreenPoster(context, state, fontFamily) {
 
   context.fillStyle = theme.line;
   context.fillRect(72, 1484, 936, 2);
-  drawFitText(context, "每天一点，慢慢向前。", 72, 1520, 850, 27, 700, fontFamily, theme.muted);
+  drawFitText(context, "mantou 定投清单 · 每天一点，慢慢向前。", 72, 1520, 936, 27, 700, fontFamily, theme.muted);
 }
 
 function wrapReadingText(context, text, maxWidth, maxLines = 4) {
@@ -720,7 +780,7 @@ function normalizeReadingMinutes(value) {
 }
 
 function normalizeTrainingStatus(value) {
-  return ["力量训练", "羽毛球", "激活", "恢复", "未训练"].includes(value) ? value : "未训练";
+  return isTrainingStatus(value) ? value : "未训练";
 }
 
 function normalizeAcceptanceStatus(value) {

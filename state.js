@@ -3,8 +3,17 @@
 export const STORAGE_KEY = "personal-investment-checklist:v1";
 export const RECOVERY_KEY = `${STORAGE_KEY}:recovery`;
 export const BACKUP_FORMAT = "mantou-personal-investment-checklist";
-export const TRAINING_STATUSES = ["力量训练", "羽毛球", "激活", "恢复", "未训练"];
-const TEXT_FIELDS = ["bodyPhase", "bodyMeta", "investmentPhase", "readingPhase", "nextResult", "nextResultDate", "nextResult2", "nextResultDate2", "nextResult3", "nextResultDate3", "motto"];
+export const TRAINING_STATUSES = ["力量训练", "羽毛球", "耐力训练", "有氧运动", "瑜伽", "体育活动", "激活", "恢复", "未训练"];
+export function isTrainingStatus(value) {
+  return typeof value === "string" && value.length > 0 && value.length <= 20
+    && value.trim() === value && !/[\u0000-\u001f\u007f]/u.test(value);
+}
+export function parseTrainingOptions(value) {
+  return [...new Set(String(value || "").split(/\r?\n/u).map((item) => item.trim())
+    .filter((item) => isTrainingStatus(item) && !TRAINING_STATUSES.includes(item)))].slice(0, 8);
+}
+const PERSONALIZATION_LIMITS = { posterTitle: 20, readingLabel: 10, trainingLabel: 10, diaryLabel: 10, customTrainingOptions: 240 };
+const TEXT_FIELDS = ["bodyPhase", "bodyMeta", "investmentPhase", "readingPhase", "nextResult", "nextResultDate", "nextResult2", "nextResultDate2", "nextResult3", "nextResultDate3", "motto", ...Object.keys(PERSONALIZATION_LIMITS)];
 const isObject = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
 
 export function toLocalISODate(date) {
@@ -42,7 +51,7 @@ export function sanitizeWeekLog(value, weekKey) {
     .filter(([date, record]) => isISODate(date) && getWeekKey(date) === weekKey && isObject(record))
     .map(([date, record]) => [date, {
       readingMinutes: Math.min(360, Math.max(0, Number(record.readingMinutes) || 0)),
-      trainingStatus: TRAINING_STATUSES.includes(record.trainingStatus) ? record.trainingStatus : "未训练",
+      trainingStatus: isTrainingStatus(record.trainingStatus) ? record.trainingStatus : "未训练",
       diaryDone: record.diaryDone === true
     }]));
 }
@@ -56,10 +65,15 @@ function validateState(state, { migrateLegacyDiaryTotal = false } = {}) {
       throw new Error(`文字字段无效：${field}`);
     }
   }
+  for (const [field, max] of Object.entries(PERSONALIZATION_LIMITS)) {
+    if (field in state && (state[field].length > max || /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/u.test(state[field]))) {
+      throw new Error(`个性化字段无效：${field}`);
+    }
+  }
   if ("readingMinutes" in state && (!Number.isInteger(state.readingMinutes) || state.readingMinutes < 0 || state.readingMinutes > 360)) {
     throw new Error("阅读与思考分钟无效");
   }
-  if ("trainingStatus" in state && !TRAINING_STATUSES.includes(state.trainingStatus)) throw new Error("训练状态无效");
+  if ("trainingStatus" in state && !isTrainingStatus(state.trainingStatus)) throw new Error("训练状态无效");
   if ("diaryDone" in state && typeof state.diaryDone !== "boolean") throw new Error("日记完成状态无效");
   // Old (pre-week-log) raw states are supported. A partial or inconsistent week
   // structure is rejected rather than silently clearing or counting other weeks.
@@ -70,7 +84,7 @@ function validateState(state, { migrateLegacyDiaryTotal = false } = {}) {
     for (const [date, record] of Object.entries(state.weekLog)) {
       if (!isISODate(date) || getWeekKey(date) !== state.weekKey || !isObject(record)
         || !Number.isInteger(record.readingMinutes) || record.readingMinutes < 0 || record.readingMinutes > 360
-        || !TRAINING_STATUSES.includes(record.trainingStatus) || typeof record.diaryDone !== "boolean") {
+        || !isTrainingStatus(record.trainingStatus) || typeof record.diaryDone !== "boolean") {
         throw new Error("周日志包含无效日期或数据");
       }
     }
