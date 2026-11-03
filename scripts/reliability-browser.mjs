@@ -200,6 +200,38 @@ try {
   browser = await chromium.launch({ executablePath: findChromeExecutable(), headless: true });
 
   for (const route of ["/", "/editor"]) {
+    await test(`${route}: personalized labels and activities persist through reload, export and PNG`, async ({ open }) => {
+      const page = await open(route);
+      await page.locator("#poster-title").fill("Aki 的清单");
+      await page.locator("#reading-label").fill("阅读1h+");
+      await page.locator("#training-label").fill("运动");
+      await page.locator("#diary-label").fill("表达");
+      await page.locator("#custom-training-options").fill("游泳\\n乒乓球");
+      assert.equal(await page.locator("#training-status option[value='游泳']").count(), 1);
+      await page.locator("#training-status").selectOption("游泳");
+      await page.locator("#diary-done").check();
+      await flush(page);
+
+      const saved = await snapshot(page);
+      assert.equal(saved.posterTitle, "Aki 的清单");
+      assert.equal(saved.readingLabel, "阅读1h+");
+      assert.equal(saved.trainingLabel, "运动");
+      assert.equal(saved.diaryLabel, "表达");
+      assert.equal(saved.trainingStatus, "游泳");
+      assert.equal(saved.weekLog[TODAY].trainingStatus, "游泳");
+      assert.equal(await page.locator("#reading-name").textContent(), "阅读1h+");
+      assert.equal(await page.locator("#training-name").textContent(), "今日运动");
+      assert.equal(await page.locator("#diary-name").textContent(), "今日表达已完成");
+      assert.deepEqual((await exportedBackup(page)).state, saved);
+      await downloadPNG(page);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.waitForFunction(() => window.checklistStorage?.snapshot);
+      assert.equal((await snapshot(page)).trainingStatus, "游泳");
+      assert.equal(await page.locator("#training-status").inputValue(), "游泳");
+    });
+  }
+
+  for (const route of ["/", "/editor"]) {
     await test(`${route}: reject out-of-week dates without corrupting pending daily edits`, async ({ open }) => {
       const page = await open(route);
       assert.equal(await page.locator("#date").inputValue(), TODAY);
