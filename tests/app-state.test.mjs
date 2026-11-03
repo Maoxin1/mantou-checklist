@@ -343,7 +343,8 @@ test("poster separates actual reading from plan and preserves every recorded tra
     app.eval("createPosterDataUrl()");
     const calls = app.posterCalls;
     assert.equal(calls.filter(({ text }) => text === "定投清单").length, 1);
-    assert.ok(!calls.some(({ text }) => text.includes("mantou")));
+    assert.equal(calls.filter(({ text }) => text.includes("mantou")).length, 1);
+    assert.ok(calls.some(({ text, y }) => text.startsWith("mantou 定投清单 ·") && y === 1520));
     const wordmarks = app.identityCalls.filter(({ name }) => name === "wordmark");
     assert.equal(wordmarks.length, 1);
     assert.equal(wordmarks[0].x + wordmarks[0].width + 18, calls.find(({ text }) => text === "定投清单").x);
