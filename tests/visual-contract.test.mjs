@@ -61,6 +61,9 @@ test("page and imported visual assets are all present in the offline shell", () 
       assert.ok(shell.includes(`"${file}"`), `${file} absent from offline shell`);
     }
     assert.match(html, /name="readingMinutes" aria-label="阅读与思考分钟"/);
+    for (const id of ["poster-title", "reading-label", "training-label", "diary-label", "custom-training-options"]) {
+      assert.ok(html.includes(`id="${id}"`), `${page}: missing ${id}`);
+    }
   }
   assert.ok(shell.includes('"./identity.js"'));
   assert.ok(read("scripts/build.mjs").includes('"identity.js"'));

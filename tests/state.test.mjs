@@ -34,7 +34,7 @@ test("backup metadata, field types, diary bounds, and every logged date are chec
   const invalid = [null, [], {}, { date: "anything", diaryDay: null },
     { ...current(), diaryDay: "100" }, { ...current(), diaryDay: -1 }, { ...current(), diaryDay: 0.5 },
     { ...current(), diaryDay: Number.MAX_SAFE_INTEGER + 1 }, { ...current(), diaryDone: "false" },
-    { ...current(), readingMinutes: "90" }, { ...current(), trainingStatus: "unknown" },
+    { ...current(), readingMinutes: "90" }, { ...current(), trainingStatus: "x".repeat(21) },
     { ...current(), bodyPhase: {} }, { ...current(), weekKey: "2026-10-05" },
     { ...current(), weekLog: [] }, { ...current(), weekLog: { "2026-10-05": record } },
     { ...current(), weekLog: { "2026-99-99": record } },
@@ -74,4 +74,17 @@ test("local migration counts top-level-only days but rejects every other corrupt
     { ...current(), diaryDay: 0, readingMinutes: 25 },
     { ...makeBackup(legacy), version: 99 }
   ]) assert.throws(() => parseLocalState(corrupted), JSON.stringify(corrupted));
+});
+
+test("reader names and custom activities survive backups without weakening validation", () => {
+  const custom = { ...current(), posterTitle: "Aki 的清单", readingLabel: "阅读1h+", trainingLabel: "运动", diaryLabel: "表达",
+    customTrainingOptions: "游泳\n乒乓球", trainingStatus: "游泳",
+    weekLog: { "2026-10-04": { ...record, trainingStatus: "游泳" } } };
+  assert.deepEqual(parseBackup(makeBackup(custom)), custom);
+  assert.equal(sanitizeWeekLog(custom.weekLog, custom.weekKey)["2026-10-04"].trainingStatus, "游泳");
+  for (const patch of [{ posterTitle: "x".repeat(21) }, { diaryLabel: "x".repeat(11) },
+    { customTrainingOptions: "x".repeat(241) }, { trainingStatus: "" },
+    { trainingStatus: "x".repeat(21) }, { trainingStatus: "bad\nstatus" }]) {
+    assert.throws(() => parseBackup({ ...custom, ...patch }), JSON.stringify(patch));
+  }
 });

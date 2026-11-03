@@ -20,7 +20,7 @@ function createApp(seed = base(), storage = new Map()) {
   const identityCalls = [];
   const select = (selector) => {
     if (!nodes.has(selector)) {
-      const names = { date: "date", "reading-minutes": "readingMinutes", "training-status": "trainingStatus", "diary-day": "diaryDay", "diary-done": "diaryDone", "body-meta": "bodyMeta", "reading-phase": "readingPhase", "next-result": "nextResult" };
+      const names = { date: "date", "reading-minutes": "readingMinutes", "training-status": "trainingStatus", "diary-day": "diaryDay", "diary-done": "diaryDone", "body-meta": "bodyMeta", "reading-phase": "readingPhase", "next-result": "nextResult", "poster-title": "posterTitle", "reading-label": "readingLabel", "training-label": "trainingLabel", "diary-label": "diaryLabel", "custom-training-options": "customTrainingOptions" };
       const id = selector.replace(/^#/, "");
       nodes.set(selector, { value: "", name: names[id], type: id === "diary-done" ? "checkbox" : "text", checked: false, min: "0", max: "180", textContent: "", listeners: {}, style: { setProperty() {} }, classList: { add() {}, remove() {} }, setAttribute() {}, addEventListener(type, fn) { this.listeners[type] = fn; } });
     }
@@ -416,4 +416,28 @@ test("fixed trial dates show pending, running and review without inventing compl
   app.eval("createPosterDataUrl()");
   assert.equal(app.eval("JSON.stringify(state)"), before);
   assert.equal(config.weeklyStrengthTarget, 2);
+});
+
+test("reader personalization keeps three recorded types, custom sport, and a branded poster", () => {
+  const app = createApp();
+  app.input("poster-title", "Aki 的清单");
+  app.input("reading-label", "阅读1h+");
+  app.input("training-label", "运动");
+  app.input("diary-label", "表达");
+  app.input("custom-training-options", "游泳\n乒乓球");
+  app.input("training-status", "游泳");
+  const saved = app.eval("getFormState()");
+  assert.equal(saved.posterTitle, "Aki 的清单");
+  assert.equal(saved.trainingStatus, "游泳");
+  assert.equal(saved.weekLog[saved.date].trainingStatus, "游泳");
+  assert.equal(saved.readingMinutes, 90);
+  assert.equal(saved.diaryDone, true);
+  assert.equal(saved.diaryDay, 100);
+  assert.deepEqual(stateHelpers.parseBackup(stateHelpers.makeBackup(saved)), saved);
+  app.eval("renderPreviews()");
+  const drawn = app.posterCalls.map(({ text }) => text);
+  for (const label of ["Aki 的清单", "阅读1h+", "运动", "表达", "游泳", "mantou 定投清单 · 每天一点，慢慢向前。"]) {
+    assert.ok(drawn.includes(label), `Missing poster text: ${label}`);
+  }
+  assert.equal(app.eval("getWeeklyStats(state).strengthCount"), 0);
 });
