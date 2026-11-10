@@ -8,8 +8,9 @@ const fallbackConfig = {
   readingPhase: "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   readingTargetMinutes: 90,
   weeklyReadingTargetMinutes: 450,
-  weeklyStrengthTarget: 2,
+  weeklyStrengthTarget: 3,
   trainingTrial: { start: "2026-10-27", end: "2026-11-09" },
+  trainingPlan: { start: "2026-11-10", label: "三日力量 · 持续训练", schedule: "周一 A · 周三 B · 周五 C · 周末一次羽毛球" },
   trainingStatus: "未训练",
   nextResult: "",
   nextResultDate: "待验收",
@@ -277,9 +278,15 @@ function fillForm(state) {
   syncReadingSlider(state.readingMinutes);
   syncTrainingOptions();
   const trial = config.trainingTrial;
-  elements.trainingTrialPeriod.textContent = `${trial.start} — ${trial.end} · ${trainingTrialStatus(state.date)}`;
-  elements.trainingTrialStatus.textContent = `两周试行 · ${trainingTrialStatus(state.date)}`;
-  elements.trainingTrialSchedule.textContent = `每周${Number(config.weeklyStrengthTarget) || 2}次力量训练 · 周末一次羽毛球`;
+  const plan = config.trainingPlan;
+  const ongoing = state.date >= plan.start;
+  elements.trainingTrialPeriod.textContent = ongoing
+    ? `${plan.start} 起 · 持续阶段；上期试行 ${trial.start} — ${trial.end}（已复盘）`
+    : `${trial.start} — ${trial.end} · ${trainingTrialStatus(state.date)}`;
+  elements.trainingTrialStatus.textContent = ongoing ? plan.label : `两周试行 · ${trainingTrialStatus(state.date)}`;
+  elements.trainingTrialSchedule.textContent = ongoing
+    ? `每周${Number(config.weeklyStrengthTarget) || 3}次力量训练 · ${plan.schedule}`
+    : "上期安排：每周2次力量训练 · 周末一次羽毛球";
   elements.diaryDone.checked = state.diaryDone;
   elements.diaryDay.value = state.diaryDay;
   elements.nextResult.value = state.nextResult;
