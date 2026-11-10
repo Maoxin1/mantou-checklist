@@ -402,9 +402,9 @@ test("two-week training content keeps other focus and reports badminton without 
   assert.equal(restored.eval("getWeeklyStats(state).strengthCount"), 0);
   restored.input("training-status", "力量训练");
   assert.equal(restored.eval("getWeeklyStats(state).strengthCount"), 1);
-  assert.equal(config.weeklyStrengthTarget, 2);
+  assert.equal(config.weeklyStrengthTarget, 3);
   restored.eval("createPosterDataUrl()");
-  assert.ok(restored.posterCalls.some(({ text }) => text === "1 / 2 次"));
+  assert.ok(restored.posterCalls.some(({ text }) => text === "1 / 3 次"));
 });
 
 test("fixed trial dates show pending, running and review without inventing completion or increasing targets", () => {
@@ -416,7 +416,28 @@ test("fixed trial dates show pending, running and review without inventing compl
   const before = app.eval("JSON.stringify(state)");
   app.eval("createPosterDataUrl()");
   assert.equal(app.eval("JSON.stringify(state)"), before);
-  assert.equal(config.weeklyStrengthTarget, 2);
+  assert.equal(config.weeklyStrengthTarget, 3);
+});
+
+test("ongoing phase replaces expired trial without changing recorded facts or custom settings", () => {
+  const seed = { ...base(), bodyPhase: "我的实验", bodyMeta: "稳定运行" };
+  const app = createApp(seed);
+  app.time("2026-11-10T12:00:00");
+  app.eval("refreshCalendar()");
+  app.input("reading-minutes", 65);
+  app.input("training-status", "羽毛球");
+  const before = app.eval("JSON.stringify(state)");
+  app.eval("fillForm(state); createPosterDataUrl()");
+  assert.equal(app.eval("JSON.stringify(state)"), before);
+  assert.equal(app.nodes.get("#training-trial-status").textContent, "三日力量 · 持续训练");
+  assert.match(app.nodes.get("#training-trial-schedule").textContent, /每周3次.*周一 A.*周三 B.*周五 C/);
+  assert.match(app.nodes.get("#training-trial-period").textContent, /2026-11-10 起.*已复盘/);
+  assert.equal(app.eval("state.bodyPhase"), seed.bodyPhase);
+  assert.equal(app.eval("state.bodyMeta"), seed.bodyMeta);
+  assert.equal(app.eval("state.diaryDay"), seed.diaryDay);
+  assert.equal(app.eval("state.readingMinutes"), 65);
+  assert.equal(app.eval("getWeeklyStats(state).strengthCount"), 0);
+  assert.equal(app.storage.get(key), JSON.stringify(seed), "Rendering must not overwrite stored records");
 });
 
 test("reader personalization keeps three recorded types, custom sport, and a branded poster", () => {

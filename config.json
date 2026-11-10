@@ -5,7 +5,7 @@
   "readingPhase": "精读：《Beyond Feelings》\n略读：《The Craft of Research》",
   "readingTargetMinutes": 90,
   "weeklyReadingTargetMinutes": 450,
-  "weeklyStrengthTarget": 2,
+  "weeklyStrengthTarget": 3,
   "trainingStatus": "未训练",
   "nextResult": "",
   "nextResultDate": "待验收",
@@ -17,6 +17,11 @@
   "trainingTrial": {
     "start": "2026-10-27",
     "end": "2026-11-09"
+  },
+  "trainingPlan": {
+    "start": "2026-11-10",
+    "label": "三日力量 · 持续训练",
+    "schedule": "周一 A · 周三 B · 周五 C · 周末一次羽毛球"
   },
   "posterTitle": "mantou 定投清单",
   "readingLabel": "阅读与思考",
