@@ -5,6 +5,27 @@ import { isISODate, getWeekKey, weekEnd, sanitizeWeekLog, parseBackup, makeBacku
 const record = { readingMinutes: 90, trainingStatus: "力量训练", diaryDone: true };
 const current = () => ({ date: "2026-10-04", diaryDay: 100, weekKey: "2026-09-28", weekLog: { "2026-10-04": { ...record } }, ...record });
 
+test("v3 validates cross-week history, projection and cumulative baseline", () => {
+  const source = { ...current(), diaryBase: 98, dailyLog: {
+    "2026-09-27": { ...record }, "2026-10-04": { ...record }
+  } };
+  const backup = makeBackup(source);
+  assert.equal(backup.version, 3);
+  assert.deepEqual(parseBackup(backup), source);
+  for (const mutate of [
+    s => { s.diaryBase++; },
+    s => { s.dailyLog["2026-09-27"].diaryDone = "true"; },
+    s => { s.dailyLog["2026-10-04"].readingMinutes = 10; },
+    s => { s.dailyLog["2026-02-30"] = { ...record }; },
+    s => { delete s.dailyLog; },
+    s => { delete s.diaryBase; }
+  ]) {
+    const invalid = structuredClone(backup);
+    mutate(invalid.state);
+    assert.throws(() => parseBackup(invalid));
+  }
+});
+
 test("calendar validation rejects normalized invalid dates and accepts leap days", () => {
   for (const value of ["2026-02-29", "2026-99-99", "2026-04-31", "2026-1-01", "anything", null]) assert.equal(isISODate(value), false);
   assert.equal(isISODate("2024-02-29"), true);

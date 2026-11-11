@@ -34,7 +34,7 @@ function exportBackup() {
 async function importBackup(file) {
   let validated;
   try {
-    if (file.size > 1_000_000) throw new Error("备份文件过大");
+    if (file.size > 10_000_000) throw new Error("备份文件过大");
     validated = parseBackup(JSON.parse(await file.text()));
   } catch (error) {
     announce(`备份文件无效：${error.message}`);
@@ -42,7 +42,7 @@ async function importBackup(file) {
     return;
   }
   try {
-    if (!window.confirm("导入会覆盖当前清单，并先保留一份导入前备份。仅恢复本周日志，累计日记与阶段设置会保留。是否继续？")) return;
+    if (!window.confirm("导入会用备份中的全部每日记录、累计日记和阶段设置替换当前清单，并先保留一份导入前备份。是否继续？")) return;
     await window.checklistStorage.restore(validated);
     announce("备份恢复成功；可下载导入前备份");
   } catch (error) {
