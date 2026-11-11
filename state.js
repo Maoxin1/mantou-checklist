@@ -1,5 +1,4 @@
-// Shared, side-effect-free storage/backup validation. Keep the v1 storage key and
-// v2 backup shape so existing installations and exported files remain readable.
+// v3 retains daily history; the original storage key and v1/v2 imports remain supported.
 export const STORAGE_KEY = "personal-investment-checklist:v1";
 export const RECOVERY_KEY = `${STORAGE_KEY}:recovery`;
 export const BACKUP_FORMAT = "mantou-personal-investment-checklist";
@@ -43,6 +42,29 @@ export function weekEnd(weekKey) {
   const date = parseLocalDate(weekKey);
   date.setDate(date.getDate() + 6);
   return toLocalISODate(date);
+}
+
+export function shiftDate(value, days) {
+  const date = parseLocalDate(value);
+  date.setDate(date.getDate() + days);
+  return toLocalISODate(date);
+}
+
+export function countDiaryDays(log) {
+  return Object.values(log).filter((daily) => daily.diaryDone).length;
+}
+
+export function migrateDailyHistory(saved, initialTotal = 0) {
+  if (saved?.dailyLog) return { dailyLog: structuredClone(saved.dailyLog), diaryBase: saved.diaryBase };
+  const dailyLog = structuredClone(saved?.weekLog || {});
+  if (isISODate(saved?.date) && !dailyLog[saved.date]) {
+    dailyLog[saved.date] = {
+      readingMinutes: saved.readingMinutes ?? 0,
+      trainingStatus: saved.trainingStatus || "未训练",
+      diaryDone: saved.diaryDone === true
+    };
+  }
+  return { dailyLog, diaryBase: Math.max(0, (saved?.diaryDay ?? initialTotal) - countDiaryDays(dailyLog)) };
 }
 
 export function sanitizeWeekLog(value, weekKey) {
@@ -93,6 +115,31 @@ function validateState(state, { migrateLegacyDiaryTotal = false } = {}) {
       throw new Error("当天记录与周日志不一致");
     }
   }
+  if ("dailyLog" in state || "diaryBase" in state) {
+    if (!isObject(state.dailyLog) || !Number.isSafeInteger(state.diaryBase) || state.diaryBase < 0) {
+      throw new Error("历史日志或日记起始值无效");
+    }
+    for (const [date, daily] of Object.entries(state.dailyLog)) {
+      if (!isISODate(date) || !isObject(daily)
+        || !Number.isInteger(daily.readingMinutes) || daily.readingMinutes < 0 || daily.readingMinutes > 360
+        || !isTrainingStatus(daily.trainingStatus) || typeof daily.diaryDone !== "boolean") {
+        throw new Error("历史日志包含无效日期或数据");
+      }
+    }
+    const projected = sanitizeWeekLog(state.dailyLog, state.weekKey);
+    if (!isObject(state.weekLog) || Object.keys(projected).length !== Object.keys(state.weekLog).length
+      || Object.entries(projected).some(([date, daily]) =>
+        ["readingMinutes", "trainingStatus", "diaryDone"].some((key) => daily[key] !== state.weekLog[date]?.[key]))) {
+      throw new Error("历史日志与周日志不一致");
+    }
+    const selected = state.dailyLog[state.date];
+    if (!selected && (state.readingMinutes !== 0 || state.trainingStatus !== "未训练" || state.diaryDone !== false)) {
+      throw new Error("未记录日期包含每日数据");
+    }
+    if (state.diaryDay !== state.diaryBase + countDiaryDays(state.dailyLog)) {
+      throw new Error("累计日记与历史日志不一致");
+    }
+  }
   const completed = state.weekLog
     ? Object.values(state.weekLog).filter((daily) => daily.diaryDone).length
       + Number(!Object.hasOwn(state.weekLog, state.date) && state.diaryDone === true)
@@ -111,8 +158,11 @@ function validateState(state, { migrateLegacyDiaryTotal = false } = {}) {
 function unwrapState(payload) {
   if (!isObject(payload)) throw new Error("备份必须是 JSON 对象");
   if ("state" in payload || "format" in payload || "version" in payload) {
-    if (payload.format !== BACKUP_FORMAT || ![1, 2].includes(payload.version)) {
+    if (payload.format !== BACKUP_FORMAT || ![1, 2, 3].includes(payload.version)) {
       throw new Error("不支持的备份格式或版本");
+    }
+    if (payload.version === 3 && (!isObject(payload.state) || !Object.hasOwn(payload.state, "dailyLog"))) {
+      throw new Error("新版备份缺少历史日志");
     }
     return payload.state;
   }
@@ -134,5 +184,5 @@ export function parseLocalState(payload) {
 }
 
 export function makeBackup(state) {
-  return { format: BACKUP_FORMAT, version: 2, exportedAt: new Date().toISOString(), state: structuredClone(state) };
+  return { format: BACKUP_FORMAT, version: state.dailyLog ? 3 : 2, exportedAt: new Date().toISOString(), state: structuredClone(state) };
 }

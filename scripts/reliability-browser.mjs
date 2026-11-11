@@ -130,7 +130,7 @@ async function date(page, value) {
 }
 
 function envelope(state) {
-  return { format: BACKUP_FORMAT, version: 2, state };
+  return { format: BACKUP_FORMAT, version: state.dailyLog ? 3 : 2, state };
 }
 
 async function exportedBackup(page, button = "#export-backup") {
@@ -141,7 +141,7 @@ async function exportedBackup(page, button = "#export-backup") {
   assert.equal(await download.failure(), null);
   const payload = JSON.parse(await readFile(await download.path(), "utf8"));
   assert.equal(payload.format, BACKUP_FORMAT);
-  assert.equal(payload.version, 2);
+  assert.equal(payload.version, 3);
   assert.equal(typeof payload.state, "object");
   assert.notEqual(payload.state, null);
   return payload;
@@ -232,16 +232,16 @@ try {
   }
 
   for (const route of ["/", "/editor"]) {
-    await test(`${route}: reject out-of-week dates without corrupting pending daily edits`, async ({ open }) => {
+    await test(`${route}: reject future dates without corrupting pending daily edits`, async ({ open }) => {
       const page = await open(route);
       assert.equal(await page.locator("#date").inputValue(), TODAY);
-      assert.equal(await page.locator("#date").getAttribute("min"), WEEK);
-      assert.equal(await page.locator("#date").getAttribute("max"), "2026-10-11");
+      assert.equal(await page.locator("#date").getAttribute("min"), "0001-01-01");
+      assert.equal(await page.locator("#date").getAttribute("max"), TODAY);
       await page.locator("#diary-done").check();
       await reading(page, 65);
       await page.locator("#training-status").selectOption("力量训练");
       const before = await snapshot(page);
-      for (const invalid of ["2026-10-04", "2026-10-12", ""]) {
+      for (const invalid of ["2026-10-08", "2026-10-12", ""]) {
         await date(page, invalid);
         assert.equal(await page.locator("#date").inputValue(), TODAY);
         assert.deepEqual(await snapshot(page), before, `Rejected date ${JSON.stringify(invalid)} must not change state`);
@@ -254,6 +254,37 @@ try {
       assert.equal(saved.weekKey, WEEK);
     });
   }
+
+  await test("visible controls backfill Sunday on Monday and preserve today's input", async ({ open }) => {
+    const page = await open();
+    await wakeAt(page, "2026-10-11T16:05:00.000Z");
+    await reading(page, 75);
+    const total = (await snapshot(page)).diaryDay;
+    await page.locator("#fill-yesterday").click();
+    assert.equal(await page.locator("#date").inputValue(), "2026-10-11");
+    assert.match(await page.locator("#record-date-status").textContent(), /正在补记.*待记录/);
+    await reading(page, 45);
+    await page.locator("#diary-done").check();
+    await page.locator("#training-status").selectOption("力量训练");
+    await flush(page);
+    await page.locator("#return-today").click();
+    assert.equal((await snapshot(page)).readingMinutes, 75);
+    assert.equal((await snapshot(page)).diaryDay, total + 1);
+    assert.equal(await page.locator("#fill-yesterday").isVisible(), false);
+    await flush(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.waitForFunction(() => window.checklistStorage?.snapshot);
+    await page.locator("#previous-day").click();
+    assert.equal((await snapshot(page)).readingMinutes, 45);
+    assert.equal((await snapshot(page)).weekKey, "2026-10-05");
+    await page.locator("#next-day").click();
+    assert.equal((await snapshot(page)).readingMinutes, 75);
+    await page.locator("#previous-day").click();
+    await page.locator("#previous-day").click();
+    await page.locator("#confirm-day").click();
+    assert.match(await page.locator("#record-date-status").textContent(), /已有记录/);
+    assert.equal((await snapshot(page)).diaryDay, total + 1);
+  });
 
   await test("date switches keep separate daily values, slider badge, and diary total", async ({ open }) => {
     const page = await open();
@@ -327,13 +358,14 @@ try {
     assert.equal(after.readingMinutes, 30);
   });
 
-  await test("new local week drops the old weekly log and preserves cumulative diary count", async ({ open }) => {
+  await test("new local week retains daily history and preserves cumulative diary count", async ({ open }) => {
     const page = await open();
     await reading(page, 105);
     await page.locator("#diary-done").check();
     await date(page, "2026-10-06");
     await reading(page, 35);
     const before = await snapshot(page);
+    await date(page, TODAY);
     await wakeAt(page, "2026-10-11T16:05:00.000Z"); // Monday locally.
     await page.waitForFunction(() => document.querySelector("#date").value === "2026-10-12");
     const after = await snapshot(page);
@@ -343,8 +375,8 @@ try {
     assert.equal(after.diaryDone, false);
     assert.equal(after.diaryDay, before.diaryDay);
     assert.ok(Object.keys(after.weekLog).every((key) => key >= "2026-10-12" && key <= "2026-10-18"));
-    assert.equal(await page.locator("#date").getAttribute("min"), "2026-10-12");
-    assert.equal(await page.locator("#date").getAttribute("max"), "2026-10-18");
+    assert.equal(await page.locator("#date").getAttribute("min"), "0001-01-01");
+    assert.equal(await page.locator("#date").getAttribute("max"), "2026-10-12");
     await flush(page);
   });
 
@@ -381,12 +413,14 @@ try {
     const imported = structuredClone(old);
     imported.readingMinutes = 120;
     imported.weekLog[imported.date].readingMinutes = 120;
+    imported.dailyLog[imported.date].readingMinutes = 120;
     imported.diaryDay += 10;
+    imported.diaryBase += 10;
     assert.equal(await importBackup(page, envelope(imported)), 1);
     assert.deepEqual(await snapshot(page), imported);
     const recovery = JSON.parse(await storage(page, RECOVERY_KEY));
     assert.equal(recovery.format, BACKUP_FORMAT);
-    assert.equal(recovery.version, 2);
+    assert.equal(recovery.version, 3);
     assert.deepEqual(recovery.state, old);
     assert.deepEqual((await exportedBackup(page, "#export-recovery")).state, old);
     assert.deepEqual(await snapshot(page), imported, "Recovery download must leave the imported state unchanged");
@@ -442,6 +476,7 @@ try {
     const raw = await storage(page);
     const incoming = structuredClone(before);
     incoming.diaryDay += 10;
+    incoming.diaryBase += 10;
     assert.equal(await importBackup(page, envelope(incoming), { confirm: false }), 1);
     assert.deepEqual(await snapshot(page), before);
     assert.equal(await storage(page), raw);
@@ -466,6 +501,7 @@ try {
       }, failingKey);
       const incoming = structuredClone(before);
       incoming.diaryDay += 100;
+      incoming.diaryBase += 100;
       assert.equal(await importBackup(page, envelope(incoming)), 1);
       assert.deepEqual(await snapshot(page), before, "Failed import must leave the current in-memory form untouched");
       assert.equal(await storage(page), raw, "Failed import must leave durable current data untouched");
@@ -478,6 +514,8 @@ try {
   await test("legacy local totals migrate without hiding data or weakening import validation", async ({ open }) => {
     const page = await open();
     const legacy = await snapshot(page);
+    delete legacy.dailyLog;
+    delete legacy.diaryBase;
     legacy.diaryDay = 0;
     legacy.diaryDone = true;
     legacy.readingMinutes = 55;
@@ -491,7 +529,7 @@ try {
     await page.reload({ waitUntil: "domcontentloaded" });
     await page.waitForFunction(() => window.checklistStorage?.snapshot);
     const migrated = await snapshot(page);
-    assert.deepEqual(migrated, { ...legacy, diaryDay: 2 });
+    assert.deepEqual(migrated, { ...legacy, diaryDay: 2, dailyLog: legacy.weekLog, diaryBase: 0 });
     assert.equal(await storage(page), raw, "Read-time migration must not overwrite the source value");
     assert.equal(await page.locator("#mobile-editor").getAttribute("data-view"), "form");
     await page.locator('[data-editor-view="preview"]').click();
@@ -513,7 +551,7 @@ try {
     assert.deepEqual(await snapshot(page), saved);
     await page.locator('[data-editor-view="form"]').click();
     while (await closedSections.count()) await closedSections.first().click();
-    const replacement = { ...saved, diaryDay: 200 };
+    const replacement = { ...saved, diaryDay: 200, diaryBase: 198 };
     assert.equal(await importBackup(page, envelope(replacement)), 1, "Migrated local data must not block restore");
     assert.equal((await snapshot(page)).diaryDay, 200);
     assert.deepEqual(JSON.parse(await storage(page, RECOVERY_KEY)).state, saved);

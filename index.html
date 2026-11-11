@@ -10,7 +10,7 @@
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icons/icon-192.png" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=22" />
+    <link rel="stylesheet" href="./styles.css?v=23" />
     <title>mantou 定投清单</title>
   </head>
   <body>
@@ -50,8 +50,20 @@
         </div>
 
         <form id="checklist-form" autocomplete="off">
+          <section class="date-navigation" aria-label="选择记录日期">
+            <div class="date-navigation-row">
+              <button id="previous-day" type="button" aria-label="前一天">‹</button>
+              <input id="date" name="date" type="date" aria-label="记录日期" aria-describedby="record-date-status" />
+              <button id="next-day" type="button" aria-label="后一天">›</button>
+            </div>
+            <div class="date-navigation-status">
+              <span id="record-date-status" role="status" aria-live="polite"></span>
+              <button id="return-today" type="button" hidden>回到今天</button>
+            </div>
+            <button id="fill-yesterday" class="text-button" type="button" hidden>昨天还没有记录 · 去补录</button>
+          </section>
           <fieldset>
-            <legend>今日事实</legend>
+            <legend id="daily-legend">今日记录</legend>
             <div class="reading-control">
               <div class="reading-control-head">
                 <div>
@@ -85,16 +97,13 @@
               </span>
               <input id="diary-done" name="diaryDone" type="checkbox" role="switch" />
             </label>
+            <button id="confirm-day" class="text-button" type="button">确认当日记录（含未完成）</button>
           </fieldset>
 
           <details>
             <summary>当前重点与阅读设置</summary>
             <p id="training-trial-period"></p>
             <p><a href="https://mantou-training-offline.vercel.app/" target="_blank" rel="noopener">打开训练卡</a> · 动作、负重与周复盘在训练卡记录；此处只记今日事实。</p>
-            <label>
-              <span>记录与发布日期（仅本周）</span>
-              <input id="date" name="date" type="date" />
-            </label>
             <label>
               <span id="diary-day-name">累计有效日记天数</span>
               <input id="diary-day" name="diaryDay" type="number" min="0" step="1" inputmode="numeric" />
@@ -217,7 +226,7 @@
     <footer class="app-footer">把时间转化为能力、资本与自主权。</footer>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="./app.js?v=33"></script>
+    <script type="module" src="./app.js?v=34"></script>
     <script type="module" src="./backup.js"></script>
   </body>
 </html>

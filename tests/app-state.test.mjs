@@ -42,15 +42,58 @@ function createApp(seed = base(), storage = new Map()) {
   };
 }
 
-test("cross-week selection and repeated rendering cannot clear records or add diary days", () => {
+test("cross-week backfill preserves today and repeated rendering never adds days", () => {
   const app = createApp();
-  const before = app.eval("JSON.stringify(getFormState())");
   app.date("2026-09-27");
-  assert.equal(app.eval("JSON.stringify(getFormState())"), before);
+  assert.equal(app.eval("state.date"), "2026-09-27");
+  assert.equal(app.eval("Object.keys(state.weekLog).length"), 0);
+  const before = app.eval("JSON.stringify(getFormState())");
   app.eval("createPosterDataUrl(); getFormState(); createPosterDataUrl();");
   assert.equal(app.eval("JSON.stringify(getFormState())"), before);
   app.input("diary-done", true);
+  app.input("diary-done", true);
+  assert.equal(app.eval("state.diaryDay"), 101);
+  app.input("reading-minutes", 60);
+  assert.equal(app.eval("getWeeklyStats(state).readingMinutes"), 60);
+  app.date("2026-10-04");
+  assert.equal(app.eval("state.readingMinutes"), 90);
+  assert.equal(app.eval("getWeeklyStats(state).readingMinutes"), 120);
+  assert.equal(app.eval("state.diaryDay"), 101);
+});
+
+test("cross-week backfill survives save, reload and backup restore", async () => {
+  const app = createApp();
+  app.date("2026-09-27");
+  app.input("reading-minutes", 60);
+  app.input("diary-done", true);
+  await app.eval("saveState()");
+  const persisted = JSON.parse(app.storage.get(key));
+  const backup = stateHelpers.makeBackup(persisted);
+  assert.equal(backup.version, 3);
+  assert.doesNotThrow(() => stateHelpers.parseBackup(backup));
+  const reload = createApp(persisted);
+  assert.equal(reload.eval("state.readingMinutes"), 90);
+  reload.date("2026-09-27");
+  assert.equal(reload.eval("state.readingMinutes"), 60);
+  reload.input("diary-done", false);
+  assert.equal(reload.eval("state.diaryDay"), 100);
+  reload.sandbox.backup = backup;
+  await reload.eval("restoreState(backup)");
+  assert.equal(reload.eval("state.diaryDay"), 101);
+  assert.equal(reload.eval("state.dailyLog['2026-09-27'].diaryDone"), true);
+});
+
+test("viewing missing dates or changing settings does not mark them recorded", () => {
+  const app = createApp();
+  app.date("2026-09-27");
+  app.input("investment-phase", "updated");
+  assert.equal(app.eval("Object.hasOwn(state.dailyLog, state.date)"), false);
+  app.nodes.get("#confirm-day").listeners.click();
+  assert.equal(app.eval("Object.hasOwn(state.dailyLog, state.date)"), true);
   assert.equal(app.eval("state.diaryDay"), 100);
+  app.time("2026-10-05T01:00:00");
+  app.eval("refreshCalendar()");
+  assert.equal(app.eval("state.date"), "2026-09-27");
 });
 
 test("reading-focus upgrade migrates known copy without changing daily records or diary totals", async () => {
@@ -120,6 +163,7 @@ test("midnight input goes to the new day, preserving the cumulative total", () =
   assert.equal(app.eval("state.readingMinutes"), 60);
   assert.equal(app.eval("state.diaryDay"), 100);
   assert.deepEqual(JSON.parse(app.eval("JSON.stringify(Object.keys(state.weekLog))")), ["2026-10-05"]);
+  assert.equal(app.eval("Object.keys(state.dailyLog).length"), 3);
 });
 
 test("failed saves retain a detached export and PNG generation", async () => {

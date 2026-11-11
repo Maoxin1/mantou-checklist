@@ -1,4 +1,4 @@
-import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, weekEnd, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, parseLocalState, makeBackup, TRAINING_STATUSES, isTrainingStatus, parseTrainingOptions } from "./state.js";
+import { STORAGE_KEY, RECOVERY_KEY, getWeekKey, toLocalISODate, isISODate, sanitizeWeekLog, parseBackup, parseLocalState, makeBackup, TRAINING_STATUSES, isTrainingStatus, parseTrainingOptions, shiftDate, countDiaryDays, migrateDailyHistory } from "./state.js";
 import { drawIdentity } from "./identity.js";
 
 const fallbackConfig = {
@@ -118,14 +118,8 @@ function initialize() {
 
 function buildInitialState(saved, today) {
   const currentWeek = getWeekKey(today);
-  const weekLog = saved?.weekKey === currentWeek ? sanitizeWeekLog(saved?.weekLog, currentWeek) : {};
-  if (isISODate(saved?.date) && getWeekKey(saved.date) === currentWeek && !weekLog[saved.date]) {
-    weekLog[saved.date] = {
-      readingMinutes: normalizeReadingMinutes(saved.readingMinutes),
-      trainingStatus: normalizeTrainingStatus(saved.trainingStatus),
-      diaryDone: saved.diaryDone === true
-    };
-  }
+  const { dailyLog, diaryBase } = migrateDailyHistory(saved, config.diaryDay);
+  const weekLog = sanitizeWeekLog(dailyLog, currentWeek);
   const daily = weekLog[today] || {};
   const sameDay = saved?.date === today;
 
@@ -141,9 +135,11 @@ function buildInitialState(saved, today) {
       : normalizeReadingMinutes(daily.readingMinutes),
     trainingStatus: sameDay && saved?.trainingStatus
       ? normalizeTrainingStatus(saved.trainingStatus)
-      : normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus),
+      : normalizeTrainingStatus(daily.trainingStatus),
     diaryDone: sameDay && saved?.diaryDone !== undefined ? saved.diaryDone : Boolean(daily.diaryDone),
-    diaryDay: Math.max(0, Number(saved?.diaryDay ?? config.diaryDay) || 0),
+    diaryDay: diaryBase + countDiaryDays(dailyLog),
+    diaryBase,
+    dailyLog,
     weekKey: currentWeek,
     weekLog,
     nextResult: migrateLegacyText(saved?.nextResult, ["批判性判断框架 v0.1", "完成14天 V1 验收"], config.nextResult),
@@ -178,14 +174,14 @@ function bindEvents() {
         showToast("累计日记天数已达上限，请先校正累计天数");
         return;
       }
-      state.diaryDay = Math.min(Number.MAX_SAFE_INTEGER, Math.max(0, state.diaryDay + Number(value) - Number(state.diaryDone)));
     }
     state[field] = field === "readingMinutes" ? normalizeReadingMinutes(value)
       : field === "diaryDay" ? Math.min(Number.MAX_SAFE_INTEGER, Math.max(completedDiaryDays(), Math.trunc(Number(value) || 0)))
       : typeof value === "string" ? value.trim() : value;
     if (["readingLabel", "trainingLabel", "diaryLabel"].includes(field)) syncDisplayLabels();
     if (field === "customTrainingOptions") syncTrainingOptions();
-    recordCurrentDay();
+    if (["readingMinutes", "trainingStatus", "diaryDone"].includes(field)) recordCurrentDay();
+    if (field === "diaryDay") state.diaryBase = state.diaryDay - completedDiaryDays();
     dirty = true;
     // Do not rewrite text inputs on every keystroke (caret/IME composition).
     elements.diaryDay.value = state.diaryDay;
@@ -198,12 +194,28 @@ function bindEvents() {
   elements.date.addEventListener("change", () => {
     const nextDate = elements.date.value;
     refreshCalendar();
-    if (!isISODate(nextDate) || getWeekKey(nextDate) !== getWeekKey(observedToday)) {
+    if (!isISODate(nextDate) || nextDate < "0001-01-01" || nextDate > observedToday) {
       elements.date.value = state.date;
-      showToast("只支持查看和补记本周日期，已有记录未改变");
+      showToast("请选择今天或过去的日期");
       return;
     }
     selectDate(nextDate);
+    dirty = true;
+    render();
+    void saveState();
+  });
+
+  const navigate = (date) => {
+    elements.date.value = date;
+    elements.date.dispatchEvent(new Event("change"));
+  };
+  document.querySelector("#previous-day").addEventListener("click", () => navigate(shiftDate(state.date, -1)));
+  document.querySelector("#next-day").addEventListener("click", () => navigate(shiftDate(state.date, 1)));
+  document.querySelector("#return-today").addEventListener("click", () => navigate(toLocalISODate(new Date())));
+  document.querySelector("#fill-yesterday").addEventListener("click", () => navigate(shiftDate(toLocalISODate(new Date()), -1)));
+  document.querySelector("#confirm-day").addEventListener("click", () => {
+    refreshCalendar();
+    recordCurrentDay();
     dirty = true;
     render();
     void saveState();
@@ -269,8 +281,8 @@ function bindEvents() {
 
 function fillForm(state) {
   elements.date.value = state.date;
-  elements.date.min = getWeekKey(observedToday);
-  elements.date.max = weekEnd(elements.date.min);
+  elements.date.min = "0001-01-01";
+  elements.date.max = observedToday;
   elements.bodyPhase.value = state.bodyPhase;
   elements.bodyMeta.value = state.bodyMeta;
   elements.readingPhase.value = state.readingPhase;
@@ -309,8 +321,9 @@ function syncDisplayLabels() {
   const training = state.trainingLabel || config.trainingLabel;
   const diary = state.diaryLabel || config.diaryLabel;
   elements.readingName.textContent = reading;
-  elements.trainingName.textContent = training === "训练记录" ? "今日训练" : `今日${training}`;
-  elements.diaryName.textContent = diary === "日记" ? "今日已写日记" : `今日${diary}已完成`;
+  const day = state.date === observedToday ? "今日" : "当日";
+  elements.trainingName.textContent = training === "训练记录" ? `${day}训练` : `${day}${training}`;
+  elements.diaryName.textContent = diary === "日记" ? `${day}已写日记` : `${day}${diary}已完成`;
   elements.diaryDayName.textContent = diary === "日记" ? "累计有效日记天数" : `累计${diary}天数`;
   elements.readingMinutes.setAttribute("aria-label", `${reading}分钟`);
 }
@@ -346,12 +359,28 @@ function syncReadingSlider(value = elements.readingMinutes.value) {
 }
 
 function render(immediate = false) {
+  renderDateControls();
   clearTimeout(previewTimer);
   if (immediate) {
     renderPreviews();
     return;
   }
   previewTimer = setTimeout(renderPreviews, 100);
+}
+
+function renderDateControls() {
+  const isToday = state.date === observedToday;
+  const recorded = Object.hasOwn(state.dailyLog, state.date);
+  document.querySelector("#record-date-status").textContent = `${isToday ? "今天" : `正在补记 ${state.date}`} · ${recorded ? "已有记录" : "待记录"}`;
+  document.querySelector("#next-day").disabled = state.date >= observedToday;
+  document.querySelector("#previous-day").disabled = state.date <= "0001-01-01";
+  document.querySelector("#return-today").hidden = isToday;
+  document.querySelector("#confirm-day").hidden = recorded;
+  document.querySelector("#fill-yesterday").hidden = !isToday || Object.hasOwn(state.dailyLog, shiftDate(observedToday, -1));
+  document.querySelector("#daily-legend").textContent = isToday ? "今日记录" : `${state.date} 的记录`;
+  syncDisplayLabels();
+  const heading = document.querySelector("#mobile-form-title");
+  if (heading) heading.textContent = isToday ? "记录今天" : "补记过去";
 }
 
 function renderPreviews() {
@@ -364,22 +393,26 @@ function getFormState() {
 }
 
 function completedDiaryDays() {
-  return Object.values(state.weekLog).filter((daily) => daily.diaryDone).length;
+  return countDiaryDays(state.dailyLog);
 }
 
 function recordCurrentDay() {
-  state.weekLog[state.date] = {
+  state.dailyLog[state.date] = {
     readingMinutes: state.readingMinutes,
     trainingStatus: state.trainingStatus,
     diaryDone: state.diaryDone
   };
+  state.weekLog = sanitizeWeekLog(state.dailyLog, state.weekKey);
+  state.diaryDay = state.diaryBase + completedDiaryDays();
 }
 
 function selectDate(date) {
-  const daily = state.weekLog[date] || {};
+  const daily = state.dailyLog[date] || {};
   state.date = date;
+  state.weekKey = getWeekKey(date);
+  state.weekLog = sanitizeWeekLog(state.dailyLog, state.weekKey);
   state.readingMinutes = normalizeReadingMinutes(daily.readingMinutes);
-  state.trainingStatus = normalizeTrainingStatus(daily.trainingStatus || config.trainingStatus);
+  state.trainingStatus = normalizeTrainingStatus(daily.trainingStatus);
   state.diaryDone = daily.diaryDone === true;
   fillForm(state);
 }
@@ -395,7 +428,7 @@ function refreshCalendar() {
   const today = toLocalISODate(new Date());
   if (today === observedToday) return false;
   const selected = state.date;
-  const followToday = selected === observedToday || getWeekKey(selected) !== getWeekKey(today);
+  const followToday = selected === observedToday;
   state = buildInitialState(state, today);
   observedToday = today;
   if (!followToday) selectDate(selected);
